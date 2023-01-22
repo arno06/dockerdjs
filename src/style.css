@@ -1,0 +1,167 @@
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 400;
+
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+
+@font-face {
+  font-family: 'fontello';
+  src: url('./assets/font/fontello.woff?70894578') format('woff');
+  src: url('./assets/font/fontello.eot?70894578#iefix') format('embedded-opentype'),
+  url('./assets/font/fontello.woff?70894578') format('woff'),
+  url('./assets/font/fontello.ttf?70894578') format('truetype'),
+  url('./assets/font/fontello.svg?70894578#fontello') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap; // this is important
+}
+
+.icons-font {
+  font-family: "fontello";
+  font-style: normal;
+  font-weight: normal;
+  speak: never;
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: .2em;
+  text-align: center;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1em;
+  margin-left: .2em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
+.button{display:block;padding:0.5em 1.5em;border-radius: 4px;color:#444;transition:all .3s;background: rgba(223, 230, 234, 0.2);cursor:pointer;}
+.button:hover{background: #cef0ff;color:#000;}
+
+#container{display:flex;width:100%;height:100%;}
+#container .side{flex: 0 0 auto;width:calc(200px - 1em);background:#fafafa;padding:0.5em;display:flex;flex-direction: column;justify-content: space-between;border-right:#dcdcdc solid 1px;}
+#container .side menu{list-style: none;padding:0.5em;margin:0;}
+#container .side menu li.current{}
+#container .side .button{display:block;padding:0.3em;border-radius: 4px;color:#444;transition:all .3s;background:transparent;}
+#container .side .button:hover{cursor:pointer;background:#eaeaea;}
+#container .side .button.current{background:#2196f3;color:#fff;}
+#container .side a{}
+
+#container .main{flex: 1 1 auto;display:flex;overflow: hidden;height:100%;position:relative;}
+#container .main>div{position:absolute;top:0;left:0;opacity:0;transform:translateY(20px);transition:all .3s;pointer-events: none;width:100%;height:100%;}
+#container .main>div.current{display:flex;flex-direction: column;flex: 1 1 auto;opacity: 1;transform:translateY(0);pointer-events: all;}
+
+#container .main>#box_overlay{background:rgba(0, 0, 0, .5);transform:translateY(0);z-index:70;}
+#container .main>#box_content{max-width: 80%;max-height: 80%;background:#fff;z-index:80;left:50%;top:50%;transform:translate(-50%, -40%);}
+#container .main>#box_overlay.displayed+#box_content,
+#container .main>#box_overlay.displayed{opacity: 1;transform:translate(0);pointer-events: all;}
+#container .main>#box_overlay.displayed+#box_content{transform:translate(-50%, -50%);-webkit-transform: translate(-50%,-50%);}
+
+#container .main>#box_content .list{padding:1em;}
+#container .main>#box_content .list .row{display:flex;height:40px;align-items: center;}
+#container .main>#box_content .list .row span.net_indicator{flex: 0 0 auto;height:40px;width:5px;margin-right:1em;}
+#container .main>#box_content .list .row span.net_indicator.online{background: #1cbd35;}
+#container .main>#box_content .list .row span.net_indicator.offline{background: #bd1c1c;}
+#container .main>#box_content .list .row span.name{flex: 1 1 auto;}
+#container .main>#box_content .list .row span.status{flex: 0 0 auto;width:160px;text-align: center;}
+#container .main>#box_content .list .row span.created{flex: 0 0 auto;width:100px;text-align: center;}
+#container .main>#box_content .list .row .actions{flex: 0 0 auto;display:flex;}
+
+#container .main .list{}
+#container .main .list .form{flex:0 0 auto;height:50px;background:#fafafa;display:flex;padding:1em;align-items:center;}
+#container .main .list .form .actions{flex: 0 0 auto;display:flex;}
+#container .main .list .form input{flex: 1 1 auto;margin:0 1em;}
+#container .main .list .content{flex: 1 1 auto;display:flex;flex-direction: column;overflow: hidden;}
+#container .main .list .content .headers{flex: 0 0 auto;height:40px;display:flex;align-items: center;background:#fff;border-bottom:#ddd solid 1px;}
+#container .main .list .content .body{flex: 1 1 auto;overflow:auto;}
+#container .main .list .content .body .row{display:flex;height:50px;align-items: center;border-bottom:solid 1px #eee;}
+#container .main .list .content .body .row.odd{background:#fff;}
+
+#container .main .list .content span{flex: 0 0 auto;display:block;}
+#container .main .list .content span.checkbox{width:35px;text-align: center;}
+#container .main .list .content span.name{flex: 1 1 auto;}
+#container .main .list .content span.name>span.repo{}
+#container .main .list .content span.name>span.tag{color: #777c7e;}
+#container .main .list .content span.containers{width:75px;text-align: center;}
+#container .main .list .content span.created{width:100px;text-align: center;}
+#container .main .list .content span.user{width:100px;text-align: center;}
+#container .main .list .content span.size{width:75px;text-align: center;}
+#container .main .list .content .body span.user,
+#container .main .list .content .body span.created,
+#container .main .list .content .body span.size{font-size:0.8em;}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: #535bf2;
+}
+
+h1 {
+  text-align: center;
+}
+
+input,
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  color: #0f0f0f;
+  background-color: #ffffff;
+  transition: border-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #396cd8;
+}
+
+input,
+button {
+  outline: none;
+}
+
+#greet-input {
+  margin-right: 5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f6f6f6;
+    background-color: #2f2f2f;
+  }
+
+  a:hover {
+    color: #24c8db;
+  }
+
+  input,
+  button {
+    color: #ffffff;
+    background-color: #0f0f0f98;
+  }
+}

@@ -6,8 +6,8 @@
 use std::process::Command;
 
 #[tauri::command]
-fn exec_command (arguments:String) -> String {
-    let output = Command::new("docker-digit.sh")
+fn exec_command (command:String, arguments:String) -> String {
+    let output = Command::new(command)
                     .arg(arguments)
                     .output()
                     .expect("failed to execute process");

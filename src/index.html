@@ -13,21 +13,21 @@
     <div class="side">
       <div><a href="#">Dockerd</a>
       <menu>
-        <li data-tab="images" class="button current"><i class="icons-font">0xe800</i>Images</li>
-        <li data-tab="containers" class="button">Containers</li>
-        <li data-tab="workingdir" class="button">Dossier de travail</li>
+        <li data-tab="images" class="button"><i class="icon image"></i>Images</li>
+        <li data-tab="containers" class="button current"><i class="icon list"></i>Containers</li>
+        <li data-tab="workingdir" class="button"><i class="icon folder"></i>Dossier de travail</li>
       </menu></div>
-      <a data-tab="parameters" class="button">Paramètres</a></div>
+      <a data-tab="parameters" class="button"><i class="icon cog"></i>Paramètres</a></div>
     <div class="main">
       <div id="box_overlay" onclick="this.classList.remove('displayed');"></div>
       <div id="box_content">
         <h1>Contenu box</h1>
       </div>
-      <div id="images" class="current list">
+      <div id="images" class="list">
         <div class="form">
-          <div class="actions"><a class="button" id="images_rm">❌</a></div>
+          <div class="actions"><a class="button" id="images_rm"><i class="icon remove"></i></a></div>
           <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, user...">
-          <div class="actions"><a class="button" id="images_reload">↻</a></div>
+          <div class="actions"><a class="button" id="images_reload"><i class="icon refresh"></i></a></div>
         </div>
         <div class="content">
           <div class="headers">
@@ -45,17 +45,18 @@
           </div>
         </div>
       </div>
-      <div id="containers" class="list">
+      <div id="containers" class="list current">
         <div class="form">
-          <div class="actions"><a class="button" id="containers_kill">⏹️</a><a class="button" id="containers_restart">▶️</a><a class="button" id="containers_rm">❌</a></div>
+          <div class="actions"><a class="button" id="containers_kill"><i class="icon stop"></i></a><a class="button" id="containers_restart"><i class="icon play"></i></a><a class="button" id="containers_rm"><i class="icon remove"></i></a></div>
           <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, name...">
-          <div class="actions"><a class="button" id="containers_reload">↻</a></div>
+          <div class="actions"><a class="button" id="containers_reload"><i class="icon refresh"></i></a></div>
         </div>
         <div class="content">
           <div class="headers">
-                    <span class="checkbox">
-                        <input type="checkbox">
-                    </span>
+            <span class="net_indicator"></span>
+            <span class="checkbox">
+                <input type="checkbox">
+            </span>
             <span class="name">Name</span>
             <span class="status">Status</span>
             <span class="created">Created</span>

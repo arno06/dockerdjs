@@ -16,14 +16,7 @@
       "shell": {
         "all": true,
         "execute": true,
-        "open": true,
-        "scope": [
-          {
-            "name": "run-docker",
-            "cmd": "docker-digit.sh",
-            "args": ["ps", "-a", {"validator": "\\S+"}]
-          }
-        ]
+        "open": true
       }
     },
     "bundle": {
@@ -41,7 +34,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "fr.arnaud_nicolas.dockerdjs",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -71,7 +64,7 @@
         "height": 600,
         "resizable": true,
         "title": "dockerdjs",
-        "width": 800
+        "width": 900
       }
     ]
   }

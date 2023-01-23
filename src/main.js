@@ -1,13 +1,14 @@
 const { invoke } = window.__TAURI__.tauri;
-
+const DOCKER_COMMAND = 'docker-digit.sh';
+const ARGUMENTS = '';
 let containers;
 let images;
 let imgSearchTo;
 let containerSearchTo;
 
 function updateContent(pParams){
-  return invoke("exec_command", {arguments: 'ps -a'}).then((pContainers)=>{
-    return invoke("exec_command", {arguments: 'images'}).then((pImages)=>{
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+'ps -a'}).then((pContainers)=>{
+    return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+'images'}).then((pImages)=>{
       let parsedImages = parseCLIResult(pImages);
       containers = parseCLIResult(pContainers);
       let named = [];
@@ -52,14 +53,34 @@ function renderContainers(){
   let containers_container = document.querySelector('#containers.list .content .body');
   containers_container.innerHTML = "";
   filtered_containers.forEach((pContainer, pIndex)=>{
+    let status = pContainer.STATUS.indexOf('Exited')===0?"offline":"online";
     let oddity = pIndex%2===0?'even':'odd';
+    let link = '';
+    if(status === 'online'){
+      if(pContainer.URL){
+        link = '<a class="button" target="_blank" href="'+pContainer.URL+'"><i class="icon link"></i></a>';
+      }else{
+        link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon info"></i></a>';
+      }
+    }
     containers_container.innerHTML += `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
+      <span class="net_indicator ${status}"></span>
       <span class="checkbox"><input type="checkbox"></span>
       <span class="name"><span class="repo">${pContainer.NAMES}</span><span class="tag">${pContainer.IMAGE}</span></span>
+      <span class="link">${link}</span>
       <span class="status">${pContainer.STATUS}</span>
       <span class="created">${pContainer.CREATED}</span>
       </div>`;
   });
+
+  containers_container.querySelectorAll('.row span.checkbox, .row span.name').forEach((pElement)=>{
+    pElement.addEventListener('click', (e)=>{
+      let cb = e.currentTarget.parentNode.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+    });
+  });
+  let headers = document.querySelector('#containers.list .content .headers');
+  headers.style.paddingRight = (containers_container.offsetWidth - containers_container.clientWidth)+"px";
 }
 
 function renderImages(){
@@ -156,7 +177,7 @@ window.renderBoxContainers = function(pId){
   let list = '';
   img.containers.forEach((pCtn)=>{
     let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
-    let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<span class="kill"><a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})">Kill</a></span>`;
+    let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
     list += `
     <div class="row">
         <span class="net_indicator ${status}"></span>
@@ -164,8 +185,8 @@ window.renderBoxContainers = function(pId){
         <span class="created">${pCtn.CREATED}</span>
         <span class="status">${pCtn.STATUS}</span>
         <div class="actions">${killAction}
-        <span class="rm"><a class="button" onclick="rmContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})">Remove</a></span>
-        <span class="restart"><a class="button" onclick="restartContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})">Restart</a></span></div>
+        <a class="button" onclick="restartContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon play"></i></a>
+        <a class="button" onclick="rmContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon remove"></i></a></div>
     </div>
     `;
   });
@@ -188,28 +209,64 @@ function toggleTabHandler(e){
   document.querySelector('#'+t.getAttribute("data-tab")).classList.add("current");
 }
 
-function rmImagesHandler(e){
-  let toRm = document.querySelectorAll('#images .content .body input[type="checkbox"]:checked');
+function getSelectedImages(){
+  return getSelectedRowsIds('#images');
+}
+
+function getSelectedContainers(){
+  return getSelectedRowsIds('#containers');
+}
+
+function getSelectedRowsIds(pParentSelector){
+  let toRm = document.querySelectorAll(pParentSelector+' .content .body input[type="checkbox"]:checked');
   if(!toRm.length){
     return;
   }
 
-  let id_images = [];
+  let ids = [];
   toRm.forEach((pEl)=>{
-    id_images.push(pEl.parentNode.parentNode.getAttribute("data-id"));
+    ids.push(pEl.parentNode.parentNode.getAttribute("data-id"));
   });
+  return ids;
+}
 
-  return invoke("exec_command", {arguments:"rmi -f "+id_images.join(" ")}).then(updateContent);
+function rmImagesHandler(e){
+  let id_images = getSelectedImages();
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"rmi -f "+id_images.join(" ")}).then(updateContent);
+}
+
+function rmContainersHandler(e){
+  let id_containers = getSelectedContainers();
+  return rmContainer(id_containers.join(" "));
+}
+
+function killContainersHandler(e){
+  let id_containers = getSelectedContainers();
+  return killContainer(id_containers.join(" "));
+}
+
+function restartContainersHandler(e){
+  let id_containers = getSelectedContainers();
+  return restartContainer(id_containers.join(" "));
 }
 
 window.rmContainer = function(pId){
-  return invoke("exec_command", {arguments:"rm -f "+pId}).then(updateContent);
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"rm -f "+pId}).then(updateContent);
 }
 window.killContainer = function (pId){
-  return invoke("exec_command", {arguments:"kill "+pId}).then(updateContent);
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"kill "+pId}).then(updateContent);
 }
 window.restartContainer = function (pId){
-  return invoke("exec_command", {arguments:"restart "+pId}).then(updateContent);
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"restart "+pId}).then(updateContent);
+}
+
+window.inspectContainer = function(pId){
+  return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+"inspect "+pId}).then((pData)=>{
+    pData = pData.split("\n");
+    pData.shift();
+    let data = JSON.parse(pData.join("\n"));
+    console.log(data);
+  });
 }
 
 function imageSearchkeyUpHandler(e){
@@ -240,6 +297,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#images .form #images_rm').addEventListener('click', rmImagesHandler);
   document.querySelector('#images .form input[type]').addEventListener('keyup', imageSearchkeyUpHandler);
   document.querySelector('#images .form input[type]').addEventListener('search', imageSearchkeyUpHandler);
+  document.querySelector('#containers .form #containers_reload').addEventListener('click', updateContent);
+  document.querySelector('#containers .form #containers_rm').addEventListener('click', rmContainersHandler);
+  document.querySelector('#containers .form #containers_restart').addEventListener('click', restartContainersHandler);
+  document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
   document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
   document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
 });

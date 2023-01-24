@@ -34,7 +34,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "fr.arnaud_nicolas.dockerdjs",
+      "identifier": "fr.arnaud-nicolas.dockerdjs",
       "longDescription": "",
       "macOS": {
         "entitlements": null,

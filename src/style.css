@@ -22,15 +22,15 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 .button:hover{background: #cef0ff;color:#000;}
 
 .icon{display:inline-block;width:20px;height:20px;vertical-align: center;background: #444;flex: 0 0 auto;}
-.icon.image{mask-image: url("assets/images/image-svgrepo-com.svg");}
-.icon.folder{mask-image: url("assets/images/folder-svgrepo-com.svg");}
-.icon.list{mask-image: url("assets/images/list-bullet-svgrepo-com.svg");}
-.icon.cog{mask-image: url("assets/images/gear-svgrepo-com.svg");}
-.icon.refresh{mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");}
-.icon.remove{mask-image: url("assets/images/nosign-svgrepo-com.svg");}
-.icon.play{mask-image: url("assets/images/media-play-svgrepo-com.svg");}
-.icon.stop{mask-image: url("assets/images/media-stop-svgrepo-com.svg");}
-.icon.info{mask-image: url("assets/images/info-circle-svgrepo-com.svg");}
+.icon.image{mask-image: url("assets/images/image-svgrepo-com.svg");-webkit-mask-image: url("assets/images/image-svgrepo-com.svg");}
+.icon.folder{mask-image: url("assets/images/folder-svgrepo-com.svg");-webkit-mask-image: url("assets/images/folder-svgrepo-com.svg");}
+.icon.list{mask-image: url("assets/images/list-bullet-svgrepo-com.svg");-webkit-mask-image: url("assets/images/list-bullet-svgrepo-com.svg");}
+.icon.cog{mask-image: url("assets/images/gear-svgrepo-com.svg");-webkit-mask-image: url("assets/images/gear-svgrepo-com.svg");}
+.icon.refresh{mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");-webkit-mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");}
+.icon.remove{mask-image: url("assets/images/nosign-svgrepo-com.svg");-webkit-mask-image: url("assets/images/nosign-svgrepo-com.svg");}
+.icon.play{mask-image: url("assets/images/media-play-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-play-svgrepo-com.svg");}
+.icon.stop{mask-image: url("assets/images/media-stop-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-stop-svgrepo-com.svg");}
+.icon.info{mask-image: url("assets/images/info-circle-svgrepo-com.svg");-webkit-mask-image: url("assets/images/info-circle-svgrepo-com.svg");}
 
 #container{display:flex;width:100%;height:100%;}
 #container .side{flex: 0 0 auto;width:calc(200px - 1em);background:#fafafa;padding:0.5em;display:flex;flex-direction: column;justify-content: space-between;border-right:#dcdcdc solid 1px;}

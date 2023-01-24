@@ -1,6 +1,8 @@
 const { invoke } = window.__TAURI__.tauri;
-const DOCKER_COMMAND = 'docker-digit.sh';
-const ARGUMENTS = '';
+/*const DOCKER_COMMAND = 'docker';
+const ARGUMENTS = '--tlsverify -H=docker-digital.vidal.net:2376 ';*/
+const DOCKER_COMMAND = 'docker';
+const ARGUMENTS = '--tlsverify -H=docker-digital.vidal.net:2376 ';
 let containers;
 let images;
 let imgSearchTo;
@@ -117,11 +119,9 @@ function renderImages(){
   headers.style.paddingRight = (images_container.offsetWidth - images_container.clientWidth)+"px";
 }
 
-
-
 function parseCLIResult(pString){
   let lines = pString.split("\n");
-  let headerLine = lines[1];
+  let headerLine = lines[0];
   let headers = [];
   let re = /([a-z0-9A-Z]+(\s[a-z0-9A-Z]+)*\s+)/gi;
   let col;
@@ -168,7 +168,9 @@ window.displayBox = function(pHtml){
   document.querySelector('#box_overlay').classList.add('displayed');
   document.querySelector('#box_content').innerHTML = pHtml;
 }
+window.renderBoxInspectContainer = function(pId){
 
+}
 window.renderBoxContainers = function(pId){
   let img = images.find((pImg)=>pImg['IMAGE ID'] === pId);
   if(!img || !img.containers.length){
@@ -259,13 +261,29 @@ window.killContainer = function (pId){
 window.restartContainer = function (pId){
   return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"restart "+pId}).then(updateContent);
 }
-
 window.inspectContainer = function(pId){
   return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+"inspect "+pId}).then((pData)=>{
-    pData = pData.split("\n");
-    pData.shift();
-    let data = JSON.parse(pData.join("\n"));
+    let data = JSON.parse(pData);
     console.log(data);
+    containers.forEach((pContainer)=>{
+      if(pContainer["CONTAINER ID"] !== pId){
+        return;
+      }
+      pContainer.INSPECT = data;
+      let envs = {};
+      data[0].Config.Env.forEach((pEnv)=>{
+        let [key, val] = pEnv.split("=");
+      });
+      if(envs.LETSENCRYPT_HOST){
+        envs.LETSENCRYPT_HOST = "https://"+envs.LETSENCRYPT_HOST;
+      }
+      if(envs.VIRTUAL_HOST){
+        envs.VIRTUAL_HOST = "http://"+envs.VIRTUAL_HOST;
+      }
+      pContainer.ENVS = envs;
+      pContainer.URL = envs.LETSENCRYPT_HOST||envs.VIRTUAL_HOST;
+      displayBox(renderBoxInspectContainer);
+    });
   });
 }
 
@@ -303,4 +321,5 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
   document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
   document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

@@ -16,7 +16,14 @@
       "shell": {
         "all": true,
         "execute": true,
-        "open": true
+        "open": true,
+        "scope": [
+          {
+            "name": "dockerdjs",
+            "cmd": "docker",
+            "args": true
+          }
+        ]
       }
     },
     "bundle": {

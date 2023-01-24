@@ -31,6 +31,7 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 .icon.play{mask-image: url("assets/images/media-play-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-play-svgrepo-com.svg");}
 .icon.stop{mask-image: url("assets/images/media-stop-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-stop-svgrepo-com.svg");}
 .icon.info{mask-image: url("assets/images/info-circle-svgrepo-com.svg");-webkit-mask-image: url("assets/images/info-circle-svgrepo-com.svg");}
+.icon.eye{mask-image: url("assets/images/eye-svgrepo-com.svg");-webkit-mask-image: url("assets/images/eye-svgrepo-com.svg");}
 
 #container{display:flex;width:100%;height:100%;}
 #container .side{flex: 0 0 auto;width:calc(200px - 1em);background:#fafafa;padding:0.5em;display:flex;flex-direction: column;justify-content: space-between;border-right:#dcdcdc solid 1px;}

@@ -1,16 +1,33 @@
-const { invoke } = window.__TAURI__.tauri;
-/*const DOCKER_COMMAND = 'docker';
-const ARGUMENTS = '--tlsverify -H=docker-digital.vidal.net:2376 ';*/
-const DOCKER_COMMAND = 'docker';
-const ARGUMENTS = '--tlsverify -H=docker-digital.vidal.net:2376 ';
+const { Command, open } = window.__TAURI__.shell;
+
+console.log(window.__TAURI__);
+
+const DOCKER_COMMAND = 'dockerdjs';
+const ARGUMENTS = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
 let containers;
 let images;
 let imgSearchTo;
 let containerSearchTo;
+let inspections = {};
 
-function updateContent(pParams){
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+'ps -a'}).then((pContainers)=>{
-    return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+'images'}).then((pImages)=>{
+function dockerCli(pParams){
+  return cli(DOCKER_COMMAND, ARGUMENTS.concat(pParams));
+}
+
+function cli(pCommand, pParams){
+  return new Promise(async (pResolve, pError)=>{
+    let t = new Command(pCommand, pParams);
+    let data = [];
+    t.stdout.on('data', (pLine)=>data.push(pLine));
+    let res = await t.execute();
+    pResolve(data.join("\n"));
+  });
+}
+
+function updateContent(){
+
+  return dockerCli(["ps", "-a"]).then((pContainers)=>{
+    return dockerCli(["images"]).then((pImages)=>{
       let parsedImages = parseCLIResult(pImages);
       containers = parseCLIResult(pContainers);
       let named = [];
@@ -59,10 +76,10 @@ function renderContainers(){
     let oddity = pIndex%2===0?'even':'odd';
     let link = '';
     if(status === 'online'){
-      if(pContainer.URL){
-        link = '<a class="button" target="_blank" href="'+pContainer.URL+'"><i class="icon link"></i></a>';
+      if(inspections[pContainer['CONTAINER ID']]&&inspections[pContainer['CONTAINER ID']].url){
+        link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon eye"></i></a>';
       }else{
-        link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon info"></i></a>';
+        link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon eye"></i></a>';
       }
     }
     containers_container.innerHTML += `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
@@ -143,7 +160,7 @@ function parseCLIResult(pString){
 
   let results = [];
 
-  for(let i = 2, max = lines.length; i<max; i++){
+  for(let i = 1, max = lines.length; i<max; i++){
     let line = lines[i];
     if(!line.trim().length){
       continue;
@@ -168,9 +185,6 @@ window.displayBox = function(pHtml){
   document.querySelector('#box_overlay').classList.add('displayed');
   document.querySelector('#box_content').innerHTML = pHtml;
 }
-window.renderBoxInspectContainer = function(pId){
-
-}
 window.renderBoxContainers = function(pId){
   let img = images.find((pImg)=>pImg['IMAGE ID'] === pId);
   if(!img || !img.containers.length){
@@ -179,14 +193,13 @@ window.renderBoxContainers = function(pId){
   let list = '';
   img.containers.forEach((pCtn)=>{
     let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
+    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon eye'></i></a>";
     let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
     list += `
     <div class="row">
         <span class="net_indicator ${status}"></span>
         <span class="name">${pCtn.NAMES}</span>
-        <span class="created">${pCtn.CREATED}</span>
-        <span class="status">${pCtn.STATUS}</span>
-        <div class="actions">${killAction}
+        <div class="actions">${see}${killAction}
         <a class="button" onclick="restartContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon play"></i></a>
         <a class="button" onclick="rmContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon remove"></i></a></div>
     </div>
@@ -233,57 +246,60 @@ function getSelectedRowsIds(pParentSelector){
 }
 
 function rmImagesHandler(e){
-  let id_images = getSelectedImages();
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"rmi -f "+id_images.join(" ")}).then(updateContent);
+  let id_images = getSelectedRowsIds('#images');
+  return dockerCli(["rmi", "-f"].concat(id_images)).then(updateContent);
 }
 
 function rmContainersHandler(e){
-  let id_containers = getSelectedContainers();
+  let id_containers = getSelectedRowsIds('#containers');
   return rmContainer(id_containers.join(" "));
 }
 
 function killContainersHandler(e){
-  let id_containers = getSelectedContainers();
+  let id_containers = getSelectedRowsIds('#containers');
   return killContainer(id_containers.join(" "));
 }
 
 function restartContainersHandler(e){
-  let id_containers = getSelectedContainers();
+  let id_containers = getSelectedRowsIds('#containers');
   return restartContainer(id_containers.join(" "));
 }
 
 window.rmContainer = function(pId){
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"rm -f "+pId}).then(updateContent);
+  return dockerCli(["rm", "-f", pId]).then(updateContent);
 }
 window.killContainer = function (pId){
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"kill "+pId}).then(updateContent);
+  return dockerCli(["kill", pId]).then(updateContent);
 }
 window.restartContainer = function (pId){
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments:ARGUMENTS+"restart "+pId}).then(updateContent);
+  return dockerCli(["restart", pId]).then(updateContent);
 }
 window.inspectContainer = function(pId){
-  return invoke("exec_command", {command: DOCKER_COMMAND, arguments: ARGUMENTS+"inspect "+pId}).then((pData)=>{
+  if(inspections[pId]){
+    renderContainers();
+    open(inspections[pId].url);
+    return;
+  }
+  return dockerCli(["inspect", pId]).then((pData)=>{
     let data = JSON.parse(pData);
-    console.log(data);
-    containers.forEach((pContainer)=>{
-      if(pContainer["CONTAINER ID"] !== pId){
-        return;
-      }
-      pContainer.INSPECT = data;
-      let envs = {};
-      data[0].Config.Env.forEach((pEnv)=>{
-        let [key, val] = pEnv.split("=");
-      });
-      if(envs.LETSENCRYPT_HOST){
-        envs.LETSENCRYPT_HOST = "https://"+envs.LETSENCRYPT_HOST;
-      }
-      if(envs.VIRTUAL_HOST){
-        envs.VIRTUAL_HOST = "http://"+envs.VIRTUAL_HOST;
-      }
-      pContainer.ENVS = envs;
-      pContainer.URL = envs.LETSENCRYPT_HOST||envs.VIRTUAL_HOST;
-      displayBox(renderBoxInspectContainer);
+    let env = {};
+    data[0].Config.Env.forEach((pEnv)=>{
+      let [key, val] = pEnv.split("=");
+      env[key] = val;
     });
+    if(env.LETSENCRYPT_HOST){
+      env.LETSENCRYPT_HOST = "https://"+env.LETSENCRYPT_HOST;
+    }
+    if(env.VIRTUAL_HOST){
+      env.VIRTUAL_HOST = "http://"+env.VIRTUAL_HOST;
+    }
+    inspections[pId] = {
+      "raw":data[0],
+      "env":env,
+      "url":env.LETSENCRYPT_HOST||env.VIRTUAL_HOST
+    };
+    renderContainers();
+    open(inspections[pId].url);
   });
 }
 
@@ -321,5 +337,5 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
   document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
   document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
-  document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

@@ -25,7 +25,6 @@ function cli(pCommand, pParams){
 }
 
 function updateContent(){
-
   return dockerCli(["ps", "-a"]).then((pContainers)=>{
     return dockerCli(["images"]).then((pImages)=>{
       let parsedImages = parseCLIResult(pImages);
@@ -303,6 +302,17 @@ window.inspectContainer = function(pId){
   });
 }
 
+function toggleMenuHandler(e){
+  let side = document.querySelector('.side');
+  M4Tween.killTweensOf(side);
+  let open = side.classList.toggle("open");
+  if(open){
+    M4Tween.to(side, .4,{width:"240px"});
+  }else{
+    M4Tween.to(side, .3,{width:"40px"});
+  }
+}
+
 function imageSearchkeyUpHandler(e){
   e.preventDefault();
   e.stopImmediatePropagation();
@@ -337,5 +347,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
   document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
   document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
-  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

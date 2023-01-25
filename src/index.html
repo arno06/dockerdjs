@@ -6,18 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dockerd</title>
     <script type="module" src="/main.js" defer></script>
+    <script src="/scripts/M4Tween.js" defer></script>
   </head>
 
   <body>
   <div id="container">
-    <div class="side">
-      <div><a href="#">Dockerd</a>
+    <div class="side open">
+      <div><a id="home_button" class="button"><i class="icon info"></i><span>Dockerd</span></a>
       <menu>
-        <li data-tab="images" class="button"><i class="icon image"></i>Images</li>
-        <li data-tab="containers" class="button current"><i class="icon list"></i>Containers</li>
-        <li data-tab="workingdir" class="button"><i class="icon folder"></i>Dossier de travail</li>
+        <li data-tab="images" class="button"><i class="icon image"></i><span>Images</span></li>
+        <li data-tab="containers" class="button current"><i class="icon list"></i><span>Containers</span></li>
+        <li data-tab="workingdir" class="button"><i class="icon folder"></i><span>Dossier de travail</span></li>
       </menu></div>
-      <a data-tab="parameters" class="button"><i class="icon cog"></i>Paramètres</a></div>
+      <a data-tab="parameters" class="button"><i class="icon cog"></i><span>Paramètres</span></a></div>
     <div class="main">
       <div id="box_overlay" onclick="this.classList.remove('displayed');"></div>
       <div id="box_content">
@@ -70,7 +71,21 @@
         <h1>Working dir</h1>
       </div>
       <div id="parameters">
-        <h1>Paramètres</h1>
+        <div class="block">
+          <h2>Docker</h2>
+          <form>
+            <div class="input">
+              <label for="docker_path">CLI Client :</label>
+              <input type="text" id="docker_path" autocomplete="off">
+            </div>
+            <div class="input">
+              <label>Arguments :</label>
+              <div class="list">
+
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>

@@ -307,9 +307,9 @@ function toggleMenuHandler(e){
   M4Tween.killTweensOf(side);
   let open = side.classList.toggle("open");
   if(open){
-    M4Tween.to(side, .4,{width:"240px"});
+    M4Tween.to(side, .4,{width:"184px"});
   }else{
-    M4Tween.to(side, .3,{width:"40px"});
+    M4Tween.to(side, .3,{width:"41px"});
   }
 }
 

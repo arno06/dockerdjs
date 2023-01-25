@@ -4,6 +4,7 @@
 )]
 
 fn main() {
+    fix_path_env::fix();
     tauri::Builder::default()
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

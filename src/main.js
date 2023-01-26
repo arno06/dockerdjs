@@ -332,6 +332,10 @@ function containerSearchkeyUpHandler(e){
   containerSearchTo = setTimeout(renderContainers, 250);
 }
 
+function chooseFolderHandler(e){
+
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('#container>.side *[data-tab]').forEach((pElement)=>{
     pElement.addEventListener('click', toggleTabHandler);
@@ -348,5 +352,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
   document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
   document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
-  document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
+  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

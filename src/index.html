@@ -15,8 +15,8 @@
       <div><a id="home_button" class="button"><i class="icon logo"></i><span>Dockerd</span></a>
       <menu>
         <li data-tab="images" class="button"><i class="icon image"></i><span>Images</span></li>
-        <li data-tab="containers" class="button current"><i class="icon list"></i><span>Containers</span></li>
-        <li data-tab="workingdir" class="button"><i class="icon folder"></i><span>Dossier de travail</span></li>
+        <li data-tab="containers" class="button"><i class="icon list"></i><span>Containers</span></li>
+        <li data-tab="workingdir" class="button current"><i class="icon folder"></i><span>Dossier de travail</span></li>
       </menu></div>
       <a data-tab="parameters" class="button"><i class="icon cog"></i><span>Paramètres</span></a></div>
     <div class="main">
@@ -46,7 +46,7 @@
           </div>
         </div>
       </div>
-      <div id="containers" class="list current">
+      <div id="containers" class="list">
         <div class="form">
           <div class="actions"><a class="button" id="containers_kill"><i class="icon stop"></i></a><a class="button" id="containers_restart"><i class="icon play"></i></a><a class="button" id="containers_rm"><i class="icon remove"></i></a></div>
           <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, name...">
@@ -67,8 +67,25 @@
           </div>
         </div>
       </div>
-      <div id="workingdir">
-        <h1>Working dir</h1>
+      <div id="workingdir" class="current">
+        <ul>
+          <li class="current">vidal-fr</li>
+        </ul>
+        <div class="form">
+          <div class="input">
+            <label>Dossier de travail :</label>
+            <input type="text" disabled id="folder"/>
+            <a class="button" id="folder_choice"><i class="icon folder"></i></a>
+          </div>
+          <div class="input">
+            <label>Mode :</label>
+            <select>
+              <option>Branche Git</option>
+              <option>Tag</option>
+              <option>Repository / Image</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div id="parameters">
         <div class="block">

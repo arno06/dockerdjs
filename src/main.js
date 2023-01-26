@@ -1,9 +1,22 @@
 const { Command, open } = window.__TAURI__.shell;
+const openDialog  = window.__TAURI__.dialog.open;
 
 console.log(window.__TAURI__);
 
 const DOCKER_COMMAND = 'dockerdjs';
-const ARGUMENTS = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
+let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
+let workingDirs = [{
+    'name':'vidal-fr',
+    'dir':'/Users/anicolas/Projects/vidal-fr',
+    'mode':'branch'
+  },
+  {
+    'name':'resources',
+    'dir':'/Users/anicolas/Projects/resources',
+    'mode':'tag'
+  }
+];
+let selectedWorkingDir = 0;
 let containers;
 let images;
 let imgSearchTo;
@@ -11,7 +24,7 @@ let containerSearchTo;
 let inspections = {};
 
 function dockerCli(pParams){
-  return cli(DOCKER_COMMAND, ARGUMENTS.concat(pParams));
+  return cli(DOCKER_COMMAND, docker_arguments.concat(pParams));
 }
 
 function cli(pCommand, pParams){
@@ -61,14 +74,18 @@ function updateContent(){
 }
 
 function renderContainers(){
+  let containers_container = document.querySelector('#containers.list .content .body');
   let container_search = document.querySelector('#containers .form input[type="search"]');
+  if(!images.length){
+    containers_container.innerHTML = '<div class="empty">Aucun conteneur<span>(Vérifier que le serveur Docker est accessible)</span></div>';
+    return;
+  }
   let filtered_containers = containers;
   if(container_search.value.length){
     filtered_containers = filtered_containers.filter((pContainer)=>{
       return pContainer.NAMES.indexOf(container_search.value)>-1||pContainer.IMAGE.indexOf(container_search.value)>-1;
     });
   }
-  let containers_container = document.querySelector('#containers.list .content .body');
   containers_container.innerHTML = "";
   filtered_containers.forEach((pContainer, pIndex)=>{
     let status = pContainer.STATUS.indexOf('Exited')===0?"offline":"online";
@@ -102,14 +119,18 @@ function renderContainers(){
 }
 
 function renderImages(){
+  let images_container = document.querySelector('#images.list .content .body');
   let images_search = document.querySelector('#images .form input[type="search"]');
+  if(!images.length){
+    images_container.innerHTML = '<div class="empty">Aucune image<span>(Vérifier que le serveur Docker est accessible)</span></div>';
+    return;
+  }
   let filtered_images = images;
   if(images_search.value.length){
     filtered_images = filtered_images.filter((pImage)=>{
       return pImage.REPOSITORY.indexOf(images_search.value)>-1||pImage.TAG.indexOf(images_search.value)>-1||(pImage.USER&&pImage.USER.indexOf(images_search.value)>-1);
     });
   }
-  let images_container = document.querySelector('#images.list .content .body');
   images_container.innerHTML = "";
   filtered_images.forEach((pImage, pIndex)=>{
     let oddity = pIndex%2===0?'even':'odd';
@@ -302,6 +323,15 @@ window.inspectContainer = function(pId){
   });
 }
 
+window.changeWorkingDir = function(pIndex){
+  selectedWorkingDir = pIndex;
+  let dir = workingDirs[selectedWorkingDir];
+  document.querySelector('#wd_dir').value = dir.dir;
+  document.querySelector('#wd_mode').value = dir.mode;
+  document.querySelector('#workingdir>ul>li.current').classList.remove('current');
+  document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"]').classList.add('current');
+}
+
 function toggleMenuHandler(e){
   let side = document.querySelector('.side');
   M4Tween.killTweensOf(side);
@@ -333,7 +363,41 @@ function containerSearchkeyUpHandler(e){
 }
 
 function chooseFolderHandler(e){
+  openDialog({
+    directory:true
+  }).then((pFolder)=>{
+    workingDirs[selectedWorkingDir].dir = pFolder;
+    changeWorkingDir(selectedWorkingDir);
+  });
+}
 
+function initImagesScreen(){
+  document.querySelector('#images .form #images_reload').addEventListener('click', updateContent);
+  document.querySelector('#images .form #images_rm').addEventListener('click', rmImagesHandler);
+  document.querySelector('#images .form input[type]').addEventListener('keyup', imageSearchkeyUpHandler);
+  document.querySelector('#images .form input[type]').addEventListener('search', imageSearchkeyUpHandler);
+}
+
+function initContainersScreen(){
+  document.querySelector('#containers .form #containers_reload').addEventListener('click', updateContent);
+  document.querySelector('#containers .form #containers_rm').addEventListener('click', rmContainersHandler);
+  document.querySelector('#containers .form #containers_restart').addEventListener('click', restartContainersHandler);
+  document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
+  document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
+  document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
+}
+
+function initWorkingDirsScreen(){
+  document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
+  document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
+  let tabs = document.querySelector('#workingdir>ul');
+  workingDirs.forEach((pDir, pIndex)=>{
+    let cls = pIndex===selectedWorkingDir?' class="current"':'';
+    tabs.innerHTML += '<li data-id="'+pIndex+'"'+cls+' onclick="changeWorkingDir('+pIndex+')">'+pDir.name+'</li>';
+    if(cls.length){
+      changeWorkingDir(pIndex);
+    }
+  });
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -341,17 +405,8 @@ window.addEventListener("DOMContentLoaded", () => {
     pElement.addEventListener('click', toggleTabHandler);
   });
   updateContent();
-  document.querySelector('#images .form #images_reload').addEventListener('click', updateContent);
-  document.querySelector('#images .form #images_rm').addEventListener('click', rmImagesHandler);
-  document.querySelector('#images .form input[type]').addEventListener('keyup', imageSearchkeyUpHandler);
-  document.querySelector('#images .form input[type]').addEventListener('search', imageSearchkeyUpHandler);
-  document.querySelector('#containers .form #containers_reload').addEventListener('click', updateContent);
-  document.querySelector('#containers .form #containers_rm').addEventListener('click', rmContainersHandler);
-  document.querySelector('#containers .form #containers_restart').addEventListener('click', restartContainersHandler);
-  document.querySelector('#containers .form #containers_kill').addEventListener('click', killContainersHandler);
-  document.querySelector('#containers .form input[type]').addEventListener('keyup', containerSearchkeyUpHandler);
-  document.querySelector('#containers .form input[type]').addEventListener('search', containerSearchkeyUpHandler);
-  document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
-  document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
+  initImagesScreen();
+  initContainersScreen();
+  initWorkingDirsScreen();
   //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

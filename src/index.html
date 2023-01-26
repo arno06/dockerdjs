@@ -69,20 +69,20 @@
       </div>
       <div id="workingdir" class="current">
         <ul>
-          <li class="current">vidal-fr</li>
+
         </ul>
         <div class="form">
           <div class="input">
             <label>Dossier de travail :</label>
-            <input type="text" disabled id="folder"/>
+            <input type="text" disabled id="wd_dir"/>
             <a class="button" id="folder_choice"><i class="icon folder"></i></a>
           </div>
           <div class="input">
             <label>Mode :</label>
-            <select>
-              <option>Branche Git</option>
-              <option>Tag</option>
-              <option>Repository / Image</option>
+            <select id="wd_mode">
+              <option value="branch">Branche Git</option>
+              <option value="tag">Tag</option>
+              <option value="manual">Repository / Image</option>
             </select>
           </div>
         </div>

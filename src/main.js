@@ -1,104 +1,47 @@
 const { Command, open } = window.__TAURI__.shell;
 const openDialog  = window.__TAURI__.dialog.open;
+const { sep } = window.__TAURI__.path;
 
 console.log(window.__TAURI__);
 
 const DOCKER_COMMAND = 'dockerdjs';
+let user = 'unknown';
 let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
-let workingDirs = [{
+let docker_envs = [{'label':'VIRTUAL_HOST', 'value':'{value}.ama-doc.vidal.fr'}, {'label':'LETSENCRYPT_HOST', 'value':'{value}.ama-doc.vidal.fr'}];
+let working_dirs = [{
     'name':'vidal-fr',
-    'dir':'/Users/anicolas/Projects/vidal-fr',
-    'mode':'branch'
+    'dir':'/Users/anicolas/Projects/vidal-fr'
   },
   {
     'name':'resources',
-    'dir':'/Users/anicolas/Projects/resources',
-    'mode':'tag'
+    'dir':'/Users/anicolas/Projects/resources'
   }
 ];
-let selectedWorkingDir = 0;
-let containers;
-let images;
+let working_dir_index = 0;
+
 let imgSearchTo;
 let containerSearchTo;
 let inspections = {};
-
-function dockerCli(pParams){
-  return cli(DOCKER_COMMAND, docker_arguments.concat(pParams));
-}
-
-function cli(pCommand, pParams){
-  return new Promise(async (pResolve, pError)=>{
-    let t = new Command(pCommand, pParams);
-    let data = [];
-    t.stdout.on('data', (pLine)=>data.push(pLine));
-    let res = await t.execute();
-    pResolve(data.join("\n"));
-  });
-}
-
-function updateContent(){
-  return dockerCli(["ps", "-a"]).then((pContainers)=>{
-    return dockerCli(["images"]).then((pImages)=>{
-      let parsedImages = parseCLIResult(pImages);
-      containers = parseCLIResult(pContainers);
-      let named = [];
-      images = [];
-      parsedImages.forEach((pImage, pIndex)=>{
-        let concat_named = pImage['REPOSITORY']+':'+pImage['TAG'];
-        pImage.containers = containers.filter((pCtn)=>pCtn['IMAGE'] === pImage['IMAGE ID']||pCtn['IMAGE'] === concat_named);
-        pImage.index = pIndex;
-        if(pImage["REPOSITORY"].indexOf('user/')>-1){
-          named.push(pImage);
-          return;
-        }
-        images.push(pImage);
-      });
-      named.forEach((pImage)=>{
-        let image = images.find((pImg)=>pImg['IMAGE ID'] === pImage['IMAGE ID']);
-        let user = pImage['REPOSITORY'].replace("user/", "");
-        if(image){
-          image.USER = user;
+let listScreen = {
+  'containers':{
+    'data':[],
+    'dockerArgs':['ps', '-a'],
+    'emptyMessage':'Aucun conteneur',
+    'filter':(pContainer, pVal)=>{
+      return pContainer.NAMES.indexOf(pVal)>-1||pContainer.IMAGE.indexOf(pVal)>-1;
+    },
+    'renderRow':(pContainer, pIndex)=>{
+      let status = pContainer.STATUS.indexOf('Exited')===0?"offline":"online";
+      let oddity = pIndex%2===0?'even':'odd';
+      let link = '';
+      if(status === 'online'){
+        if(inspections[pContainer['CONTAINER ID']]&&inspections[pContainer['CONTAINER ID']].url){
+          link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon eye"></i></a>';
         }else{
-          pImage.NO_ROOT_IMG = true;
-          pImage.USER = user;
-          images.push(pImage);
+          link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon eye"></i></a>';
         }
-      });
-      images.sort((pA, pB)=>pA.index - pB.index);
-      renderImages();
-      renderContainers();
-    });
-  });
-
-}
-
-function renderContainers(){
-  let containers_container = document.querySelector('#containers.list .content .body');
-  let container_search = document.querySelector('#containers .form input[type="search"]');
-  if(!images.length){
-    containers_container.innerHTML = '<div class="empty">Aucun conteneur<span>(Vérifier que le serveur Docker est accessible)</span></div>';
-    return;
-  }
-  let filtered_containers = containers;
-  if(container_search.value.length){
-    filtered_containers = filtered_containers.filter((pContainer)=>{
-      return pContainer.NAMES.indexOf(container_search.value)>-1||pContainer.IMAGE.indexOf(container_search.value)>-1;
-    });
-  }
-  containers_container.innerHTML = "";
-  filtered_containers.forEach((pContainer, pIndex)=>{
-    let status = pContainer.STATUS.indexOf('Exited')===0?"offline":"online";
-    let oddity = pIndex%2===0?'even':'odd';
-    let link = '';
-    if(status === 'online'){
-      if(inspections[pContainer['CONTAINER ID']]&&inspections[pContainer['CONTAINER ID']].url){
-        link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon eye"></i></a>';
-      }else{
-        link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon eye"></i></a>';
       }
-    }
-    containers_container.innerHTML += `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
+      return `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
       <span class="net_indicator ${status}"></span>
       <span class="checkbox"><input type="checkbox"></span>
       <span class="name"><span class="repo">${pContainer.NAMES}</span><span class="tag">${pContainer.IMAGE}</span></span>
@@ -106,36 +49,19 @@ function renderContainers(){
       <span class="status">${pContainer.STATUS}</span>
       <span class="created">${pContainer.CREATED}</span>
       </div>`;
-  });
-
-  containers_container.querySelectorAll('.row span.checkbox, .row span.name').forEach((pElement)=>{
-    pElement.addEventListener('click', (e)=>{
-      let cb = e.currentTarget.parentNode.querySelector('input[type="checkbox"]');
-      cb.checked = !cb.checked;
-    });
-  });
-  let headers = document.querySelector('#containers.list .content .headers');
-  headers.style.paddingRight = (containers_container.offsetWidth - containers_container.clientWidth)+"px";
-}
-
-function renderImages(){
-  let images_container = document.querySelector('#images.list .content .body');
-  let images_search = document.querySelector('#images .form input[type="search"]');
-  if(!images.length){
-    images_container.innerHTML = '<div class="empty">Aucune image<span>(Vérifier que le serveur Docker est accessible)</span></div>';
-    return;
-  }
-  let filtered_images = images;
-  if(images_search.value.length){
-    filtered_images = filtered_images.filter((pImage)=>{
-      return pImage.REPOSITORY.indexOf(images_search.value)>-1||pImage.TAG.indexOf(images_search.value)>-1||(pImage.USER&&pImage.USER.indexOf(images_search.value)>-1);
-    });
-  }
-  images_container.innerHTML = "";
-  filtered_images.forEach((pImage, pIndex)=>{
-    let oddity = pIndex%2===0?'even':'odd';
-    let container = pImage.containers.length?'<a class="button" onclick="displayBox(renderBoxContainers(\''+pImage['IMAGE ID']+'\'));">'+pImage.containers.length+'</a>':pImage.containers.length;
-    images_container.innerHTML += `<div class="row ${oddity}" data-id="${pImage['IMAGE ID']}">
+    }
+  },
+  'images':{
+    'data':[],
+    'dockerArgs':['images'],
+    'emptyMessage':'Aucune image',
+    'filter':(pImage, pVal)=>{
+      return pImage.REPOSITORY.indexOf(pVal)>-1||pImage.TAG.indexOf(pVal)>-1||(pImage.USER&&pImage.USER.indexOf(pVal)>-1);
+    },
+    'renderRow':(pImage, pIndex)=>{
+      let oddity = pIndex%2===0?'even':'odd';
+      let container = pImage.containers.length?'<a class="button" onclick="displayBox(renderBoxContainers(\''+pImage['IMAGE ID']+'\'));">'+pImage.containers.length+'</a>':pImage.containers.length;
+      return `<div class="row ${oddity}" data-id="${pImage['IMAGE ID']}">
       <span class="checkbox"><input type="checkbox"></span>
       <span class="name"><span class="repo">${pImage.REPOSITORY}</span><span class="tag">${pImage.TAG}</span></span>
       <span class="containers">${container}</span>
@@ -143,17 +69,24 @@ function renderImages(){
       <span class="user">${pImage.USER||''}</span>
       <span class="size">${pImage.SIZE}</span>
       </div>`;
-  });
+    }
+  }
+};
 
-  images_container.querySelectorAll('.row span.checkbox, .row span.name').forEach((pElement)=>{
-    pElement.addEventListener('click', (e)=>{
-      let cb = e.currentTarget.parentNode.querySelector('input[type="checkbox"]');
-      cb.checked = !cb.checked;
-    });
-  });
+function dockerCli(pParams){
+  return cli(DOCKER_COMMAND, docker_arguments.concat(pParams));
+}
 
-  let headers = document.querySelector('#images.list .content .headers');
-  headers.style.paddingRight = (images_container.offsetWidth - images_container.clientWidth)+"px";
+function cli(pCommand, pParams){
+  console.log("Running : "+pCommand+" "+(pParams?pParams.join(" "):''));
+  return new Promise(async (pResolve, pError)=>{
+    let t = new Command(pCommand, pParams);
+    let data = [];
+    t.stdout.on('data', (pLine)=>data.push(pLine));
+    let res = await t.execute();
+    console.log(res);
+    pResolve(data.join("\n"));
+  });
 }
 
 function parseCLIResult(pString){
@@ -197,41 +130,76 @@ function parseCLIResult(pString){
   return results;
 }
 
-window.displayBox = function(pHtml){
-  if(pHtml===false){
-    document.querySelector('#box_overlay').classList.remove('displayed');
-    return;
+function updateContent(){
+  let promises = [];
+  for(let k in listScreen){
+    if(!listScreen.hasOwnProperty(k)){
+      continue;
+    }
+    promises.push(dockerCli(listScreen[k].dockerArgs));
   }
-  document.querySelector('#box_overlay').classList.add('displayed');
-  document.querySelector('#box_content').innerHTML = pHtml;
-}
-window.renderBoxContainers = function(pId){
-  let img = images.find((pImg)=>pImg['IMAGE ID'] === pId);
-  if(!img || !img.containers.length){
-    return false;
-  }
-  let list = '';
-  img.containers.forEach((pCtn)=>{
-    let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
-    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon eye'></i></a>";
-    let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
-    list += `
-    <div class="row">
-        <span class="net_indicator ${status}"></span>
-        <span class="name">${pCtn.NAMES}</span>
-        <div class="actions">${see}${killAction}
-        <a class="button" onclick="restartContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon play"></i></a>
-        <a class="button" onclick="rmContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon remove"></i></a></div>
-    </div>
-    `;
+  return Promise.all(promises).then((pVals)=>{
+    listScreen.containers.data = parseCLIResult(pVals[0]);
+    let parsedImages = parseCLIResult(pVals[1]);
+    let named = [];
+    listScreen.images.data = [];
+    parsedImages.forEach((pImage, pIndex)=>{
+      let concat_named = pImage['REPOSITORY']+':'+pImage['TAG'];
+      pImage.containers = listScreen.containers.data.filter((pCtn)=>pCtn['IMAGE'] === pImage['IMAGE ID']||pCtn['IMAGE'] === concat_named);
+      pImage.index = pIndex;
+      if(pImage["REPOSITORY"].indexOf('user/')>-1){
+        named.push(pImage);
+        return;
+      }
+      listScreen.images.data.push(pImage);
+    });
+    named.forEach((pImage)=>{
+      let image = listScreen.images.data.find((pImg)=>pImg['IMAGE ID'] === pImage['IMAGE ID']);
+      let user = pImage['REPOSITORY'].replace("user/", "");
+      if(image){
+        image.USER = user;
+      }else{
+        pImage.NO_ROOT_IMG = true;
+        pImage.USER = user;
+        listScreen.images.data.push(pImage);
+      }
+    });
+    listScreen.images.data.sort((pA, pB)=>pA.index - pB.index);
+    for(let k in listScreen){
+      if(!listScreen.hasOwnProperty(k)){
+        continue;
+      }
+      renderList(k);
+    }
   });
 
-  return `
-  <h1>${img['REPOSITORY']}:${img['TAG']}</h1>
-  <div class="list">
-  ${list}
-</div>
-  `;
+}
+
+function renderList(pName){
+  let container_element = document.querySelector('#'+pName+'.list .content .body');
+  let search_element = document.querySelector('#'+pName+' .form input[type="search"]');
+  if(!listScreen[pName].data.length){
+    container_element.innerHTML = '<div class="empty">'+listScreen[pName].emptyMessage+'<span>(Vérifier que le serveur Docker est accessible)</span></div>';
+    return;
+  }
+  let filtered_list = listScreen[pName].data;
+  if(search_element.value.length){
+    filtered_list = filtered_list.filter((pElement)=>listScreen[pName].filter(pElement, search_element.value));
+  }
+  container_element.innerHTML = "";
+  filtered_list.forEach((pElement, pIndex)=>{
+    container_element.innerHTML += listScreen[pName].renderRow(pElement, pIndex);
+  });
+
+  container_element.querySelectorAll('.row span.checkbox, .row span.name').forEach((pElement)=>{
+    pElement.addEventListener('click', (e)=>{
+      let cb = e.currentTarget.parentNode.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+    });
+  });
+
+  let headers = document.querySelector('#'+pName+'.list .content .headers');
+  headers.style.paddingRight = (container_element.offsetWidth - container_element.clientWidth)+"px";
 }
 
 function toggleTabHandler(e){
@@ -242,14 +210,6 @@ function toggleTabHandler(e){
   let t = e.currentTarget;
   t.classList.add("current");
   document.querySelector('#'+t.getAttribute("data-tab")).classList.add("current");
-}
-
-function getSelectedImages(){
-  return getSelectedRowsIds('#images');
-}
-
-function getSelectedContainers(){
-  return getSelectedRowsIds('#containers');
 }
 
 function getSelectedRowsIds(pParentSelector){
@@ -285,9 +245,24 @@ function restartContainersHandler(e){
   return restartContainer(id_containers.join(" "));
 }
 
+function addLineInput(pParent, pVals){
+  let input = '';
+  switch(pParent.getAttribute("data-type")){
+    case "value":
+      input = '<input type="text" name="value" value="'+(pVals??'')+'"/>';
+      break;
+    case "label_value":
+      input = '<input type="text" name="label" value="'+(pVals?pVals.label:'')+'"/>=<input type="text" name="value" value="'+(pVals?pVals.value:'')+'"/>';
+      break;
+  }
+  input += '<a class="button" onclick="removeLineInputHandler(event);">-</a>';
+  pParent.querySelector('.inputs').innerHTML += '<p>'+input+'</p>';
+}
+
 window.rmContainer = function(pId){
   return dockerCli(["rm", "-f", pId]).then(updateContent);
 }
+window.rmImage = function(pId){return dockerCli(["rmi", "-f", pId]).then(updateContent);}
 window.killContainer = function (pId){
   return dockerCli(["kill", pId]).then(updateContent);
 }
@@ -296,7 +271,7 @@ window.restartContainer = function (pId){
 }
 window.inspectContainer = function(pId){
   if(inspections[pId]){
-    renderContainers();
+    renderList('containers');
     open(inspections[pId].url);
     return;
   }
@@ -318,18 +293,144 @@ window.inspectContainer = function(pId){
       "env":env,
       "url":env.LETSENCRYPT_HOST||env.VIRTUAL_HOST
     };
-    renderContainers();
+    renderList('containers');
     open(inspections[pId].url);
   });
 }
-
 window.changeWorkingDir = function(pIndex){
-  selectedWorkingDir = pIndex;
-  let dir = workingDirs[selectedWorkingDir];
-  document.querySelector('#wd_dir').value = dir.dir;
-  document.querySelector('#wd_mode').value = dir.mode;
-  document.querySelector('#workingdir>ul>li.current').classList.remove('current');
+  working_dir_index = pIndex;
+  let dir = working_dirs[working_dir_index];
+  console.log(dir);
+  console.log(working_dirs);
+  document.querySelector('#wd_dir').value = dir.dir??'';
+  if(document.querySelector('#workingdir>ul>li.current')){
+    document.querySelector('#workingdir>ul>li.current').classList.remove('current');
+  }
   document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"]').classList.add('current');
+  document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"] span').innerHTML = dir.name??'';
+  cli('git', ['-C', dir.dir, 'branch', '--show-current']).then((pRes)=>{
+    let branch = pRes.split("/");
+    let infos = {
+      wd_tag:branch.pop(),
+      wd_repository:dir.name+(branch.length?"/"+branch[0]:"")
+    };
+    infos.wd_container = infos.wd_repository.replace("/", "-")+'_'+infos.wd_tag;
+    for(let i in infos){
+      if(!infos.hasOwnProperty(i)){
+        continue;
+      }
+      dir[i] = infos[i];
+      document.querySelector('#'+i).value = infos[i];
+    }
+    document.querySelector('#workingdir div[data-name="env_vars"] .inputs').innerHTML = '';
+    docker_envs.forEach((pArgument)=>{
+      let val = pArgument.value.replace('{value}', infos.wd_tag+'.'+(infos.wd_repository.split("/")[0]));
+      addLineInput(document.querySelector('#workingdir div[data-name="env_vars"]'), {value:val, label:pArgument.label});
+    });
+  });
+}
+window.removeWorkingDir = function(pIndex){
+  document.querySelector('#workingdir>ul>li[data-index="'+pIndex+'"]').remove();
+  let dirs = [];
+  working_dirs.forEach((pElement, pIdx)=>{
+    if(pIndex !== pIdx){
+      dirs.push(pElement);
+    }
+  });
+  working_dirs = dirs;
+  if(!working_dirs.length){
+    newWorkingDir();
+  }
+  changeWorkingDir(0);
+};
+window.displayBox = function(pHtml){
+  if(pHtml===false){
+    document.querySelector('#box_overlay').classList.remove('displayed');
+    return;
+  }
+  document.querySelector('#box_overlay').classList.add('displayed');
+  document.querySelector('#box_content').innerHTML = pHtml;
+}
+window.renderBoxContainers = function(pId){
+  let img = listScreen.images.data.find((pImg)=>pImg['IMAGE ID'] === pId);
+  if(!img || !img.containers.length){
+    return false;
+  }
+  let list = '';
+  img.containers.forEach((pCtn)=>{
+    let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
+    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon eye'></i></a>";
+    let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
+    list += `
+    <div class="row">
+        <span class="net_indicator ${status}"></span>
+        <span class="name">${pCtn.NAMES}</span>
+        <div class="actions">${see}${killAction}
+        <a class="button" onclick="restartContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon play"></i></a>
+        <a class="button" onclick="rmContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon remove"></i></a></div>
+    </div>
+    `;
+  });
+
+  return `
+  <h1>${img['REPOSITORY']}:${img['TAG']}</h1>
+  <div class="list">
+  ${list}
+</div>
+  `;
+}
+window.addLineInputHandler = function(e){
+  let list = e.currentTarget.parentNode.parentNode;
+  addLineInput(list);
+}
+window.removeLineInputHandler = function(e){
+  e.currentTarget.parentNode.remove();
+}
+window.newWorkingDir = function (e){
+  let tabs = document.querySelector('#workingdir>ul');
+  let newTab = document.createElement('li');
+  let index = working_dirs.length;
+  newTab.setAttribute('data-id', index);
+  newTab.innerHTML = 'Nouveau';
+  newTab.onclick = ()=>changeWorkingDir(index);
+  tabs.insertBefore(newTab, document.querySelector('#workingdir>ul>.button'));
+  working_dirs.push({
+    'name':'Nouveau',
+    'dir':''
+  });
+  changeWorkingDir(index);
+};
+window.recycleWorkingDir = function (e){
+  let dir = document.querySelector('#wd_dir').value;
+  let repo = document.querySelector('#wd_repository').value;
+  let tag = document.querySelector('#wd_tag').value;
+  let container = document.querySelector('#wd_container').value;
+
+  let img = repo+':'+tag;
+  let domain = 'VIRTUAL_HOST='+tag+'.'+repo+'.ama-doc.vidal.fr';
+
+  let run_args = ['run', '-d', '--name', container];
+  document.querySelectorAll('#workingdir div[data-name="env_vars"] .inputs p').forEach((pElement)=>{
+    run_args.push('-e', pElement.querySelector('input[name="label"]').value+'='+pElement.querySelector('input[name="value"]').value);
+  });
+  run_args.push(img, '--restart=always');
+
+  dockerCli(['kill', container]).then((kill)=>{
+    console.log('rm container');
+    dockerCli(['rm', '-f', container]).then((rm)=>{
+      console.log('rmi image');
+      dockerCli(['rmi', '-f', img]).then((rmi)=>{
+        console.log('build');
+        dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then((build)=>{
+          console.log('run');
+          dockerCli(run_args).then((run)=>{
+            console.log("running");
+            updateContent();
+          });
+        });
+      });
+    })
+  })
 }
 
 function toggleMenuHandler(e){
@@ -348,26 +449,27 @@ function imageSearchkeyUpHandler(e){
   e.stopImmediatePropagation();
   e.stopPropagation();
   if(imgSearchTo){
-    clearTimeout(renderImages);
+    clearTimeout(imgSearchTo);
   }
-  imgSearchTo = setTimeout(renderImages, 250);
+  imgSearchTo = setTimeout(()=>renderList('images'), 250);
 }
 function containerSearchkeyUpHandler(e){
   e.preventDefault();
   e.stopImmediatePropagation();
   e.stopPropagation();
   if(containerSearchTo){
-    clearTimeout(renderContainers);
+    clearTimeout(containerSearchTo);
   }
-  containerSearchTo = setTimeout(renderContainers, 250);
+  containerSearchTo = setTimeout(()=>renderList('containers'), 250);
 }
 
 function chooseFolderHandler(e){
   openDialog({
     directory:true
   }).then((pFolder)=>{
-    workingDirs[selectedWorkingDir].dir = pFolder;
-    changeWorkingDir(selectedWorkingDir);
+    working_dirs[working_dir_index].dir = pFolder;
+    working_dirs[working_dir_index].name = pFolder.split(sep).pop();
+    changeWorkingDir(working_dir_index);
   });
 }
 
@@ -391,12 +493,22 @@ function initWorkingDirsScreen(){
   document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
   document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
   let tabs = document.querySelector('#workingdir>ul');
-  workingDirs.forEach((pDir, pIndex)=>{
-    let cls = pIndex===selectedWorkingDir?' class="current"':'';
-    tabs.innerHTML += '<li data-id="'+pIndex+'"'+cls+' onclick="changeWorkingDir('+pIndex+')">'+pDir.name+'</li>';
+  working_dirs.forEach((pDir, pIndex)=>{
+    let cls = pIndex===working_dir_index?' class="current"':'';
+    tabs.innerHTML += '<li data-id="'+pIndex+'"'+cls+' onclick="changeWorkingDir('+pIndex+')"><span>'+pDir.name+'</span><a class="button" onclick="removeWorkingDir('+pIndex+')">x</a></li>';
     if(cls.length){
       changeWorkingDir(pIndex);
     }
+  });
+  tabs.innerHTML += '<li class="button" onclick="newWorkingDir();">+</li>';
+}
+
+function initParametersScreen(){
+  docker_arguments.forEach((pArgument)=>{
+    addLineInput(document.querySelector('#parameters .input>div[data-name="arguments"]'), pArgument);
+  });
+  docker_envs.forEach((pArgument)=>{
+    addLineInput(document.querySelector('#parameters .input>div[data-name="env_vars"]'), pArgument);
   });
 }
 
@@ -408,5 +520,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initImagesScreen();
   initContainersScreen();
   initWorkingDirsScreen();
+  initParametersScreen();
+  cli('whoami').then((pRes)=>{user = pRes;});
   //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

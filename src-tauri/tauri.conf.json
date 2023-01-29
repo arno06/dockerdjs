@@ -25,6 +25,16 @@
             "name": "dockerdjs",
             "cmd": "docker",
             "args": true
+          },
+          {
+            "name": "git",
+            "cmd": "git",
+            "args": true
+          },
+          {
+            "name": "whoami",
+            "cmd": "whoami",
+            "args": false
           }
         ]
       }

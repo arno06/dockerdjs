@@ -71,19 +71,41 @@
         <ul>
 
         </ul>
+        <div class="status">
+          <a class="button" onclick="recycleWorkingDir();">Recycler</a>
+        </div>
         <div class="form">
           <div class="input">
             <label>Dossier de travail :</label>
             <input type="text" disabled id="wd_dir"/>
             <a class="button" id="folder_choice"><i class="icon folder"></i></a>
           </div>
-          <div class="input">
-            <label>Mode :</label>
-            <select id="wd_mode">
-              <option value="branch">Branche Git</option>
-              <option value="tag">Tag</option>
-              <option value="manual">Repository / Image</option>
-            </select>
+          <div class="group">
+            <h4>Image</h4>
+            <div class="input">
+              <label>Repository :</label>
+              <input type="text" autocomplete="off" spellcheck="false" id="wd_repository"/>
+            </div>
+            <div class="input">
+              <label>Tag :</label>
+              <input type="text" autocomplete="off" spellcheck="false" id="wd_tag"/>
+            </div>
+          </div>
+          <div class="group">
+            <h4>Conteneur</h4>
+            <div class="input">
+              <label>Nom :</label>
+              <input type="text" autocomplete="off" spellcheck="false" id="wd_container"/>
+            </div>
+          </div>
+          <div class="group">
+            <h4>Variables d'environnements</h4>
+            <div class="list" data-name="env_vars" data-type="label_value">
+              <div class="inputs"></div>
+              <div class="actions">
+                <a class="button" onclick="addLineInputHandler(event);">+</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -93,8 +115,20 @@
           <form>
             <div class="input">
               <label>Arguments :</label>
-              <div class="list">
-
+              <div class="list" data-name="arguments" data-type="value">
+                <div class="inputs"></div>
+                <div class="actions">
+                  <a class="button" onclick="addLineInputHandler(event);">+</a>
+                </div>
+              </div>
+            </div>
+            <div class="input">
+              <label>Variables d'environnement :</label>
+              <div class="list" data-name="env_vars" data-type="label_value">
+                <div class="inputs"></div>
+                <div class="actions">
+                  <a class="button" onclick="addLineInputHandler(event);">+</a>
+                </div>
               </div>
             </div>
           </form>

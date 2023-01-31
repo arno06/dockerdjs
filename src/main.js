@@ -1,8 +1,8 @@
+import {STATE_ERROR, STATE_IN_PROGRESS, STATE_VALID, StepProgress} from "./scripts/StepProgress.js";
+
 const { Command, open } = window.__TAURI__.shell;
 const openDialog  = window.__TAURI__.dialog.open;
 const { sep } = window.__TAURI__.path;
-
-console.log(window.__TAURI__);
 
 const DOCKER_COMMAND = 'dockerdjs';
 let user = 'unknown';
@@ -18,7 +18,7 @@ let working_dirs = [{
   }
 ];
 let working_dir_index = 0;
-
+let working_dir_progress;
 let imgSearchTo;
 let containerSearchTo;
 let inspections = {};
@@ -85,7 +85,8 @@ function cli(pCommand, pParams){
     t.stdout.on('data', (pLine)=>data.push(pLine));
     let res = await t.execute();
     console.log(res);
-    pResolve(data.join("\n"));
+    console.log(res.code!==0);
+    pResolve([data.join("\n"), res.code!==0]);
   });
 }
 
@@ -139,8 +140,8 @@ function updateContent(){
     promises.push(dockerCli(listScreen[k].dockerArgs));
   }
   return Promise.all(promises).then((pVals)=>{
-    listScreen.containers.data = parseCLIResult(pVals[0]);
-    let parsedImages = parseCLIResult(pVals[1]);
+    listScreen.containers.data = parseCLIResult(pVals[0][0]);
+    let parsedImages = parseCLIResult(pVals[1][0]);
     let named = [];
     listScreen.images.data = [];
     parsedImages.forEach((pImage, pIndex)=>{
@@ -300,15 +301,13 @@ window.inspectContainer = function(pId){
 window.changeWorkingDir = function(pIndex){
   working_dir_index = pIndex;
   let dir = working_dirs[working_dir_index];
-  console.log(dir);
-  console.log(working_dirs);
   document.querySelector('#wd_dir').value = dir.dir??'';
   if(document.querySelector('#workingdir>ul>li.current')){
     document.querySelector('#workingdir>ul>li.current').classList.remove('current');
   }
   document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"]').classList.add('current');
   document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"] span').innerHTML = dir.name??'';
-  cli('git', ['-C', dir.dir, 'branch', '--show-current']).then((pRes)=>{
+  cli('git', ['-C', dir.dir, 'branch', '--show-current']).then(([pRes])=>{
     let branch = pRes.split("/");
     let infos = {
       wd_tag:branch.pop(),
@@ -415,17 +414,34 @@ window.recycleWorkingDir = function (e){
   });
   run_args.push(img, '--restart=always');
 
-  dockerCli(['kill', container]).then((kill)=>{
+  working_dir_progress.resume();
+  working_dir_progress.resetSteps();
+  let button = document.querySelector('#workingdir .status .button');
+  button.classList.add('disabled');
+  working_dir_progress.setStep('kill', STATE_IN_PROGRESS);
+  dockerCli(['kill', container]).then(([kill, pError])=>{
+    console.log(pError);
+    working_dir_progress.setStep('kill', pError?STATE_ERROR:STATE_VALID);
+    working_dir_progress.setStep('rm', STATE_IN_PROGRESS);
     console.log('rm container');
-    dockerCli(['rm', '-f', container]).then((rm)=>{
+    dockerCli(['rm', '-f', container]).then(([rm, pError])=>{
+      working_dir_progress.setStep('rm', pError?STATE_ERROR:STATE_VALID);
+      working_dir_progress.setStep('rmi', STATE_IN_PROGRESS);
       console.log('rmi image');
-      dockerCli(['rmi', '-f', img]).then((rmi)=>{
+      dockerCli(['rmi', '-f', img]).then(([rmi, pError])=>{
+        working_dir_progress.setStep('rmi', pError?STATE_ERROR:STATE_VALID);
+        working_dir_progress.setStep('build', STATE_IN_PROGRESS);
         console.log('build');
-        dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then((build)=>{
+        dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then(([build, pError])=>{
+          working_dir_progress.setStep('build', pError?STATE_ERROR:STATE_VALID);
+          working_dir_progress.setStep('run', STATE_IN_PROGRESS);
           console.log('run');
-          dockerCli(run_args).then((run)=>{
+          dockerCli(run_args).then(([run, pError])=>{
+            working_dir_progress.setStep('run', pError?STATE_ERROR:STATE_VALID);
             console.log("running");
             updateContent();
+            button.classList.remove('disabled');
+            working_dir_progress.pause();
           });
         });
       });
@@ -490,6 +506,14 @@ function initContainersScreen(){
 }
 
 function initWorkingDirsScreen(){
+  working_dir_progress = new StepProgress(document.querySelector('#workingdir .status .progress'));
+  working_dir_progress.addStep('kill');
+  working_dir_progress.addStep('rm');
+  working_dir_progress.addStep('rmi');
+  working_dir_progress.addStep('build');
+  working_dir_progress.addStep('run');
+  working_dir_progress.pause();
+
   document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
   document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
   let tabs = document.querySelector('#workingdir>ul');
@@ -521,6 +545,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initContainersScreen();
   initWorkingDirsScreen();
   initParametersScreen();
-  cli('whoami').then((pRes)=>{user = pRes;});
-  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  cli('whoami').then(([pRes])=>{user = pRes;});
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

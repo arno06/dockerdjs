@@ -2,6 +2,20 @@
 
 Docker desktop Tauri Client
 
+## Install
+```
+npm install
+```
+
+## Dev
+```
+npm run tauri dev
+```
+
+## Build
+```
+npm run tauri build
+```
 
 ## Icons
 

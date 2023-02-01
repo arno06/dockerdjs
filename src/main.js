@@ -84,8 +84,6 @@ function cli(pCommand, pParams){
     let data = [];
     t.stdout.on('data', (pLine)=>data.push(pLine));
     let res = await t.execute();
-    console.log(res);
-    console.log(res.code!==0);
     pResolve([data.join("\n"), res.code!==0]);
   });
 }
@@ -277,7 +275,7 @@ window.inspectContainer = function(pId){
     return;
   }
   return dockerCli(["inspect", pId]).then((pData)=>{
-    let data = JSON.parse(pData);
+    let data = JSON.parse(pData[0]);
     let env = {};
     data[0].Config.Env.forEach((pEnv)=>{
       let [key, val] = pEnv.split("=");
@@ -420,7 +418,6 @@ window.recycleWorkingDir = function (e){
   button.classList.add('disabled');
   working_dir_progress.setStep('kill', STATE_IN_PROGRESS);
   dockerCli(['kill', container]).then(([kill, pError])=>{
-    console.log(pError);
     working_dir_progress.setStep('kill', pError?STATE_ERROR:STATE_VALID);
     working_dir_progress.setStep('rm', STATE_IN_PROGRESS);
     console.log('rm container');
@@ -545,6 +542,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initContainersScreen();
   initWorkingDirsScreen();
   initParametersScreen();
-  cli('whoami').then(([pRes])=>{user = pRes;});
+  cli('whoami').then(([pRes])=>{user = pRes.split('\\').pop().replace(/\s/, "");});
   document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

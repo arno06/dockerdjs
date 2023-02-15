@@ -77,7 +77,6 @@ class StepProgress{
             ssprite.x = sRadius + 2 + (distance * pIndex);
 
             if(pIndex>0){
-                console.log("draw line");
                 this.stepsContainer.setLineStyle(2, style.borderColor);
                 this.stepsContainer.moveTo(lastX + (sRadius + 5), 0);
                 this.stepsContainer.lineTo(ssprite.x - (sRadius + 5), 0);

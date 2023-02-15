@@ -8,15 +8,8 @@ const DOCKER_COMMAND = 'dockerdjs';
 let user = 'unknown';
 let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
 let docker_envs = [{'label':'VIRTUAL_HOST', 'value':'{value}.ama-doc.vidal.fr'}, {'label':'LETSENCRYPT_HOST', 'value':'{value}.ama-doc.vidal.fr'}];
-let working_dirs = [{
-    'name':'vidal-fr',
-    'dir':'/Users/anicolas/Projects/vidal-fr'
-  },
-  {
-    'name':'resources',
-    'dir':'/Users/anicolas/Projects/resources'
-  }
-];
+let working_dirs = [];
+let running_recycle = false;
 let working_dir_index = 0;
 let working_dir_progress;
 let imgSearchTo;
@@ -258,6 +251,16 @@ function addLineInput(pParent, pVals){
   pParent.querySelector('.inputs').innerHTML += '<p>'+input+'</p>';
 }
 
+function endRecycle(){
+  let recycleButton = document.querySelector('#workingdir .status .button.recycle');
+  let cancelButton = document.querySelector('#workingdir .status .button.cancel');
+  recycleButton.classList.remove("disabled");
+  cancelButton.classList.add("disabled");
+  running_recycle = false;
+  working_dir_progress.pause();
+  updateContent();
+}
+
 window.rmContainer = function(pId){
   return dockerCli(["rm", "-f", pId]).then(updateContent);
 }
@@ -303,8 +306,6 @@ window.changeWorkingDir = function(pIndex){
   if(document.querySelector('#workingdir>ul>li.current')){
     document.querySelector('#workingdir>ul>li.current').classList.remove('current');
   }
-  document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"]').classList.add('current');
-  document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"] span').innerHTML = dir.name??'';
   cli('git', ['-C', dir.dir, 'branch', '--show-current']).then(([pRes])=>{
     let branch = pRes.split("/");
     let infos = {
@@ -319,6 +320,8 @@ window.changeWorkingDir = function(pIndex){
       dir[i] = infos[i];
       document.querySelector('#'+i).value = infos[i];
     }
+    document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"]').classList.add('current');
+    document.querySelector('#workingdir>ul>li[data-id="'+pIndex+'"] span').innerHTML = dir.name??'';
     document.querySelector('#workingdir div[data-name="env_vars"] .inputs').innerHTML = '';
     docker_envs.forEach((pArgument)=>{
       let val = pArgument.value.replace('{value}', infos.wd_tag+'.'+(infos.wd_repository.split("/")[0]));
@@ -326,11 +329,13 @@ window.changeWorkingDir = function(pIndex){
     });
   });
 }
-window.removeWorkingDir = function(pIndex){
-  document.querySelector('#workingdir>ul>li[data-index="'+pIndex+'"]').remove();
+window.removeWorkingDir = function(pEvent){
+  let idx = Number(pEvent.currentTarget.parentNode.getAttribute("data-id"));
+  document.querySelector('#workingdir>ul>li[data-id="'+idx+'"]').remove();
   let dirs = [];
   working_dirs.forEach((pElement, pIdx)=>{
-    if(pIndex !== pIdx){
+    if(idx !== pIdx){
+      document.querySelector('#workingdir>ul>li[data-id="'+pIdx+'"]').setAttribute("data-id", dirs.length);
       dirs.push(pElement);
     }
   });
@@ -388,14 +393,17 @@ window.newWorkingDir = function (e){
   let newTab = document.createElement('li');
   let index = working_dirs.length;
   newTab.setAttribute('data-id', index);
-  newTab.innerHTML = 'Nouveau';
-  newTab.onclick = ()=>changeWorkingDir(index);
+  newTab.innerHTML = '<span>Nouveau</span><a class="button" onclick="removeWorkingDir(event)">x</a>';
+  newTab.onclick = (event)=>changeWorkingDir(event.currentTarget.getAttribute("data-id"));
   tabs.insertBefore(newTab, document.querySelector('#workingdir>ul>.button'));
   working_dirs.push({
     'name':'Nouveau',
     'dir':''
   });
   changeWorkingDir(index);
+};
+window.cancelRecycle = function(){
+  running_recycle = false;
 };
 window.recycleWorkingDir = function (e){
   let dir = document.querySelector('#wd_dir').value;
@@ -414,31 +422,48 @@ window.recycleWorkingDir = function (e){
 
   working_dir_progress.resume();
   working_dir_progress.resetSteps();
-  let button = document.querySelector('#workingdir .status .button');
-  button.classList.add('disabled');
+  let recycleButton = document.querySelector('#workingdir .status .button.recycle');
+  let cancelButton = document.querySelector('#workingdir .status .button.cancel');
+  recycleButton.classList.add('disabled');
+  cancelButton.classList.remove('disabled');
   working_dir_progress.setStep('kill', STATE_IN_PROGRESS);
+  running_recycle = true;
   dockerCli(['kill', container]).then(([kill, pError])=>{
     working_dir_progress.setStep('kill', pError?STATE_ERROR:STATE_VALID);
     working_dir_progress.setStep('rm', STATE_IN_PROGRESS);
+    if(!running_recycle){
+      endRecycle();
+      return;
+    }
     console.log('rm container');
     dockerCli(['rm', '-f', container]).then(([rm, pError])=>{
       working_dir_progress.setStep('rm', pError?STATE_ERROR:STATE_VALID);
       working_dir_progress.setStep('rmi', STATE_IN_PROGRESS);
+      if(!running_recycle){
+        endRecycle();
+        return;
+      }
       console.log('rmi image');
       dockerCli(['rmi', '-f', img]).then(([rmi, pError])=>{
         working_dir_progress.setStep('rmi', pError?STATE_ERROR:STATE_VALID);
         working_dir_progress.setStep('build', STATE_IN_PROGRESS);
+        if(!running_recycle){
+          endRecycle();
+          return;
+        }
         console.log('build');
         dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then(([build, pError])=>{
           working_dir_progress.setStep('build', pError?STATE_ERROR:STATE_VALID);
           working_dir_progress.setStep('run', STATE_IN_PROGRESS);
+          if(!running_recycle){
+            endRecycle();
+            return;
+          }
           console.log('run');
           dockerCli(run_args).then(([run, pError])=>{
             working_dir_progress.setStep('run', pError?STATE_ERROR:STATE_VALID);
             console.log("running");
-            updateContent();
-            button.classList.remove('disabled');
-            working_dir_progress.pause();
+            endRecycle();
           });
         });
       });
@@ -510,18 +535,26 @@ function initWorkingDirsScreen(){
   working_dir_progress.addStep('build');
   working_dir_progress.addStep('run');
   working_dir_progress.pause();
-
   document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
   document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
+
   let tabs = document.querySelector('#workingdir>ul');
-  working_dirs.forEach((pDir, pIndex)=>{
-    let cls = pIndex===working_dir_index?' class="current"':'';
-    tabs.innerHTML += '<li data-id="'+pIndex+'"'+cls+' onclick="changeWorkingDir('+pIndex+')"><span>'+pDir.name+'</span><a class="button" onclick="removeWorkingDir('+pIndex+')">x</a></li>';
-    if(cls.length){
-      changeWorkingDir(pIndex);
-    }
-  });
-  tabs.innerHTML += '<li class="button" onclick="newWorkingDir();">+</li>';
+  if(!working_dirs.length){
+    newWorkingDir();
+  }else{
+    working_dirs.forEach((pDir, pIndex)=>{
+      let cls = pIndex===working_dir_index?' class="current"':'';
+      tabs.innerHTML += '<li data-id="'+pIndex+'"'+cls+' onclick="((event)=>{changeWorkingDir(event.currentTarget.getAttribute(\'data-id\'));})(event);"><span>'+pDir.name+'</span><a class="button" onclick="removeWorkingDir(event)">x</a></li>';
+      if(cls.length){
+        changeWorkingDir(pIndex);
+      }
+    });
+  }
+  let addButton = document.createElement('li');
+  addButton.classList.add('button');
+  addButton.onclick = ()=>{newWorkingDir();};
+  addButton.innerHTML = "+";
+  tabs.appendChild(addButton);
 }
 
 function initParametersScreen(){
@@ -543,5 +576,5 @@ window.addEventListener("DOMContentLoaded", () => {
   initWorkingDirsScreen();
   initParametersScreen();
   cli('whoami').then(([pRes])=>{user = pRes.split('\\').pop().replace(/\s/, "");});
-  document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

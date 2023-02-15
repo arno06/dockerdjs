@@ -72,7 +72,7 @@ function dockerCli(pParams){
 
 function cli(pCommand, pParams){
   console.log("Running : "+pCommand+" "+(pParams?pParams.join(" "):''));
-  return new Promise(async (pResolve, pError)=>{
+  return new Promise(async (pResolve)=>{
     let t = new Command(pCommand, pParams);
     let data = [];
     t.stdout.on('data', (pLine)=>data.push(pLine));
@@ -217,22 +217,22 @@ function getSelectedRowsIds(pParentSelector){
   return ids;
 }
 
-function rmImagesHandler(e){
+function rmImagesHandler(){
   let id_images = getSelectedRowsIds('#images');
   return dockerCli(["rmi", "-f"].concat(id_images)).then(updateContent);
 }
 
-function rmContainersHandler(e){
+function rmContainersHandler(){
   let id_containers = getSelectedRowsIds('#containers');
   return rmContainer(id_containers.join(" "));
 }
 
-function killContainersHandler(e){
+function killContainersHandler(){
   let id_containers = getSelectedRowsIds('#containers');
   return killContainer(id_containers.join(" "));
 }
 
-function restartContainersHandler(e){
+function restartContainersHandler(){
   let id_containers = getSelectedRowsIds('#containers');
   return restartContainer(id_containers.join(" "));
 }
@@ -262,14 +262,14 @@ function endRecycle(){
 }
 
 window.rmContainer = function(pId){
-  return dockerCli(["rm", "-f", pId]).then(updateContent);
+  return dockerCli(["rm", "-f"].concat(pId.split(" "))).then(updateContent);
 }
-window.rmImage = function(pId){return dockerCli(["rmi", "-f", pId]).then(updateContent);}
+window.rmImage = function(pId){return dockerCli(["rmi", "-f"].concat(pId.split(" "))).then(updateContent);}
 window.killContainer = function (pId){
   return dockerCli(["kill", pId]).then(updateContent);
 }
 window.restartContainer = function (pId){
-  return dockerCli(["restart", pId]).then(updateContent);
+  return dockerCli(["restart"].concat(pId.split(" "))).then(updateContent);
 }
 window.inspectContainer = function(pId){
   if(inspections[pId]){
@@ -330,6 +330,9 @@ window.changeWorkingDir = function(pIndex){
   });
 }
 window.removeWorkingDir = function(pEvent){
+  pEvent.preventDefault();
+  pEvent.stopPropagation();
+  pEvent.stopImmediatePropagation();
   let idx = Number(pEvent.currentTarget.parentNode.getAttribute("data-id"));
   document.querySelector('#workingdir>ul>li[data-id="'+idx+'"]').remove();
   let dirs = [];
@@ -388,7 +391,7 @@ window.addLineInputHandler = function(e){
 window.removeLineInputHandler = function(e){
   e.currentTarget.parentNode.remove();
 }
-window.newWorkingDir = function (e){
+window.newWorkingDir = function (){
   let tabs = document.querySelector('#workingdir>ul');
   let newTab = document.createElement('li');
   let index = working_dirs.length;
@@ -405,14 +408,13 @@ window.newWorkingDir = function (e){
 window.cancelRecycle = function(){
   running_recycle = false;
 };
-window.recycleWorkingDir = function (e){
+window.recycleWorkingDir = function (){
   let dir = document.querySelector('#wd_dir').value;
   let repo = document.querySelector('#wd_repository').value;
   let tag = document.querySelector('#wd_tag').value;
   let container = document.querySelector('#wd_container').value;
 
   let img = repo+':'+tag;
-  let domain = 'VIRTUAL_HOST='+tag+'.'+repo+'.ama-doc.vidal.fr';
 
   let run_args = ['run', '-d', '--name', container];
   document.querySelectorAll('#workingdir div[data-name="env_vars"] .inputs p').forEach((pElement)=>{
@@ -471,7 +473,7 @@ window.recycleWorkingDir = function (e){
   })
 }
 
-function toggleMenuHandler(e){
+function toggleMenuHandler(){
   let side = document.querySelector('.side');
   M4Tween.killTweensOf(side);
   let open = side.classList.toggle("open");
@@ -501,12 +503,12 @@ function containerSearchkeyUpHandler(e){
   containerSearchTo = setTimeout(()=>renderList('containers'), 250);
 }
 
-function chooseFolderHandler(e){
+function chooseFolderHandler(){
   openDialog({
     directory:true
   }).then((pFolder)=>{
     working_dirs[working_dir_index].dir = pFolder;
-    working_dirs[working_dir_index].name = pFolder.split(sep).pop();
+    working_dirs[working_dir_index].name = pFolder.split(sep).pop().toLowerCase();
     changeWorkingDir(working_dir_index);
   });
 }

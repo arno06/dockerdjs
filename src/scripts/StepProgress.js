@@ -1,89 +1,40 @@
-const STATE_NEUTRAL = 0;
-const STATE_IN_PROGRESS = 1;
-const STATE_ERROR = 2;
-const STATE_VALID = 3;
+const STATE_NEUTRAL = 'neutral';
+const STATE_IN_PROGRESS = 'in_progress';
+const STATE_ERROR = 'error';
+const STATE_VALID = 'valid';
 
 class StepProgress{
 
     constructor(pContainer) {
-        this.width = 450;
-        this.stage = new Stage(this.width, 50, pContainer);
-        this.stepsContainer = new Container();
-        this.stage.addChild(this.stepsContainer);
         this.steps = [];
-        this.stepsContainer.y = 20;
-        this.styles = [
-            {
-                borderWidth:1,
-                borderColor:'#aaa',
-                indicatorColor:'#000',
-                backgroundColor:'#efefef',
-                labelColor:'#999'
-            },
-            {
-                borderWidth:1,
-                borderColor:'#0f84cd',
-                indicatorColor:'#0f84cd',
-                backgroundColor:'#fff',
-                labelColor:'#0f84cd'
-            },
-            {
-                borderWidth:1,
-                borderColor:'#cd0f0f',
-                indicatorColor:'#fff',
-                backgroundColor:'#cd0f0f',
-                labelColor:'#cd0f0f'
-            },
-            {
-                borderWidth:1,
-                borderColor:'#0f84cd',
-                indicatorColor:'#fff',
-                backgroundColor:'#0f84cd',
-                labelColor:'#000'
-            }
-        ];
-    }
-
-    pause(){
-        this.stage.pause();
-    }
-
-    resume(){
-        this.stage.resume();
+        this.container = document.createElement('div');
+        this.container.classList.add('step_progress');
+        pContainer.appendChild(this.container);
     }
 
     render(){
-        this.stepsContainer.removeChildren();
-        this.stepsContainer.clear();
-        let totalSteps = this.steps.length;
-        let sRadius = 14;
-        let distance = (this.width - (sRadius<<1) - (totalSteps)) / (totalSteps-1);
-        let lastX;
+        this.container.innerHTML = '';
+
         this.steps.forEach((pElement, pIndex)=>{
-            let ssprite = new Sprite();
-            this.stepsContainer.addChild(ssprite);
-            let style = this.styles[pElement.state];
-            ssprite.clear();
-            ssprite.setLineStyle(style.borderWidth, style.borderColor);
-            ssprite.beginFill(style.backgroundColor);
-            ssprite.drawCircle(0, 0, sRadius);
-            ssprite.endFill();
-            ssprite.setFont('Arial', 12, style.indicatorColor);
-            let w = ssprite.measureText(pIndex+1, 'Arial', 12);
-            ssprite.drawText(pIndex+1, Math.round(-(w>>1))-.5, -6.5);
-            ssprite.setFont('Arial', 14, style.labelColor);
-            w = ssprite.measureText(pElement.name, "Arial", 14);
-            ssprite.drawText(pElement.name, -(w>>1)-0.5, sRadius + 2);
-            ssprite.x = sRadius + 2 + (distance * pIndex);
+            let s = document.createElement('div');
+            s.classList.add(pElement.state);
+            s.classList.add('step');
+            let indicator = document.createElement('span');
+            indicator.classList.add('indicator');
+            indicator.innerHTML = (pIndex + 1).toString();
+            s.appendChild(indicator);
+            let label = document.createElement('span');
+            label.classList.add('label');
+            label.innerHTML = pElement.name;
+            s.appendChild(label);
+            this.container.appendChild(s);
 
-            if(pIndex>0){
-                this.stepsContainer.setLineStyle(2, style.borderColor);
-                this.stepsContainer.moveTo(lastX + (sRadius + 5), 0);
-                this.stepsContainer.lineTo(ssprite.x - (sRadius + 5), 0);
-                this.stepsContainer.endFill();
+            if(pIndex<this.steps.length-1){
+                let line = document.createElement('div');
+                line.classList.add('line');
+                line.classList.add(this.steps[pIndex+1].state);
+                this.container.appendChild(line);
             }
-
-            lastX = ssprite.x;
         });
     }
 

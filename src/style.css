@@ -123,10 +123,11 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 #workingdir ul li.current .button{}
 #workingdir ul li.button{flex: 0 0 auto;margin-left:1em;width:25px;height:25px;display:flex;align-items: center;justify-content: center;padding:0;}
 #workingdir .status {display:flex;height:50px;align-items: center;background:#fff;padding:0 1em;}
+#workingdir .status .button{width:90px;box-sizing: border-box;}
 #workingdir .status .button.recycle{background:#1cbd35;color:#fff;flex: 0 0 auto;}
 #workingdir .status .button.cancel{background: #bd1c1c;color:#fff;flex: 0 0 auto;}
 #workingdir .status .button.disabled{display:none;}
-#workingdir .status .progress{flex: 1 1 auto;display:flex;justify-content: center;}
+#workingdir .status .progress{flex: 1 1 auto;display:flex;justify-content: center;height:40px;}
 #workingdir .form{padding:2em;background:#fff;flex: 1 1 auto;overflow:auto;}
 #workingdir .form h4{margin:1em 0 0;}
 #workingdir .form .input{display:flex;align-items: center;padding: 1em 0;border-bottom:solid 1px #eee;}
@@ -142,6 +143,31 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 #container #workingdir .list .inputs p{display:flex;align-items: center;justify-content: center;}
 #container #workingdir .list .inputs p .button{margin-left:0.5em;}
 #container #workingdir .list .actions{justify-content: end;margin-top:0.5em;}
+
+.step_progress{display:flex;gap:2px;align-items: center;justify-content: center;}
+.step_progress .line{flex:0 0 auto;width:50px;height:12px;border-top:2px solid #24c8db;}
+.step_progress .step{flex: 0 0 auto;width:30px;display:flex;flex-direction: column;align-items: center;justify-content: center;}
+.step_progress .step span.indicator{border:solid 1px;width:20px;height:20px;background:pink;border-radius: 100%;display:flex;align-items: center;justify-content: center;font-size:0.8em;}
+.step_progress .step span.label{font-size:0.8em;}
+
+.step_progress .step.neutral{}
+.step_progress .step.neutral .indicator{color:#000;border-color:#aaa;background:#efefef;}
+.step_progress .step.neutral .label{color:#aaa;}
+.step_progress .step.in_progress{}
+.step_progress .step.in_progress .indicator{color:#0f84cd;border-color:#0f84cd;background:#fff;}
+.step_progress .step.in_progress .label{color:#0f84cd;}
+.step_progress .step.valid{}
+.step_progress .step.valid .indicator{color:#fff;border-color:#0f84cd;background:#0f84cd;}
+.step_progress .step.valid .label{color:#aaa;}
+.step_progress .step.error{}
+.step_progress .step.error .indicator{color:#fff;border-color:#cd0f0f;background:#cd0f0f;}
+.step_progress .step.error .label{color:#aaa;}
+
+.step_progress .line.neutral{border-color: #aaa;}
+.step_progress .line.in_progress{border-color: #0f84cd;}
+.step_progress .line.valid{border-color: #0f84cd;}
+.step_progress .line.error{border-color: #cd0f0f;}
+
 
 a {
   font-weight: 500;

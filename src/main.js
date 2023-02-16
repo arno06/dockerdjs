@@ -257,7 +257,6 @@ function endRecycle(){
   recycleButton.classList.remove("disabled");
   cancelButton.classList.add("disabled");
   running_recycle = false;
-  working_dir_progress.pause();
   updateContent();
 }
 
@@ -422,7 +421,6 @@ window.recycleWorkingDir = function (){
   });
   run_args.push(img, '--restart=always');
 
-  working_dir_progress.resume();
   working_dir_progress.resetSteps();
   let recycleButton = document.querySelector('#workingdir .status .button.recycle');
   let cancelButton = document.querySelector('#workingdir .status .button.cancel');
@@ -536,7 +534,6 @@ function initWorkingDirsScreen(){
   working_dir_progress.addStep('rmi');
   working_dir_progress.addStep('build');
   working_dir_progress.addStep('run');
-  working_dir_progress.pause();
   document.querySelector('#home_button').addEventListener('click', toggleMenuHandler);
   document.querySelector('#workingdir #folder_choice').addEventListener('click', chooseFolderHandler);
 

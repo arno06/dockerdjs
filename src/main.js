@@ -3,8 +3,10 @@ import {STATE_ERROR, STATE_IN_PROGRESS, STATE_VALID, StepProgress} from "./scrip
 const { Command, open } = window.__TAURI__.shell;
 const openDialog  = window.__TAURI__.dialog.open;
 const { sep } = window.__TAURI__.path;
+const { BaseDirectory, exists, readTextFile, writeTextFile } = window.__TAURI__.fs;
 
 const DOCKER_COMMAND = 'dockerdjs';
+const CONFIG_FILE = "dockerdjs.conf";
 let user = 'unknown';
 let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
 let docker_envs = [{'label':'VIRTUAL_HOST', 'value':'{value}.ama-doc.vidal.fr'}, {'label':'LETSENCRYPT_HOST', 'value':'{value}.ama-doc.vidal.fr'}];
@@ -195,6 +197,7 @@ function renderList(pName){
 }
 
 function toggleTabHandler(e){
+  saveConfig();
   const current = document.querySelector('#container>.side .current');
   const container = document.querySelector('#'+current.getAttribute("data-tab"));
   current.classList.remove("current");
@@ -258,6 +261,15 @@ function endRecycle(){
   cancelButton.classList.add("disabled");
   running_recycle = false;
   updateContent();
+}
+
+async function saveConfig(){
+  let conf = {
+    docker_arguments:docker_arguments,
+    docker_envs:docker_envs,
+    working_dirs:working_dirs
+  };
+  return writeTextFile(CONFIG_FILE, JSON.stringify(conf), {dir: BaseDirectory.Public});
 }
 
 window.rmContainer = function(pId){
@@ -565,15 +577,34 @@ function initParametersScreen(){
   });
 }
 
+async function initConfig(){
+  return new Promise(async (pResolve, pError)=>{
+    cli('whoami').then(([pRes])=>{user = pRes.split('\\').pop().replace(/\s/, "");});
+    let configFilesExists = await exists(CONFIG_FILE, {dir: BaseDirectory.Public});
+    if(configFilesExists){
+      let raw = await readTextFile(CONFIG_FILE, {dir: BaseDirectory.Public});
+      const conf = JSON.parse(raw);
+      docker_arguments = conf.docker_arguments||[];
+      docker_envs = conf.docker_envs||[];
+      working_dirs = conf.working_dirs||[];
+    }else{
+      await saveConfig();
+    }
+    pResolve();
+  });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('#container>.side *[data-tab]').forEach((pElement)=>{
     pElement.addEventListener('click', toggleTabHandler);
   });
-  updateContent();
-  initImagesScreen();
-  initContainersScreen();
-  initWorkingDirsScreen();
-  initParametersScreen();
-  cli('whoami').then(([pRes])=>{user = pRes.split('\\').pop().replace(/\s/, "");});
+  initConfig().then(()=>{
+    console.log("inited");
+    updateContent();
+    initImagesScreen();
+    initContainersScreen();
+    initWorkingDirsScreen();
+    initParametersScreen();
+  });
   //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

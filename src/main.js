@@ -165,8 +165,61 @@ function updateContent(){
       }
       renderList(k);
     }
+    refreshStats();
   });
 
+}
+
+function refreshStats(){
+  let perUsers = {};
+  let perRepos = {};
+  let perUsage = {'used':0, 'unused':0};
+  listScreen.images.data.forEach((pImage)=>{
+    let s = pImage.SIZE;
+    if(s.indexOf('GB')>-1){
+      s = Number(s.replace("GB", "")) * 1024;
+    }else{
+      s = Number(s.replace("MB", ""));
+    }
+    console.log(pImage.SIZE, s);
+    if(!perUsers.hasOwnProperty(pImage.USER)){
+      perUsers[pImage.USER] = 0;
+    }
+    perUsers[pImage.USER] += s;
+
+    if(!perRepos.hasOwnProperty(pImage.REPOSITORY)){
+      perRepos[pImage.REPOSITORY] = 0;
+    }
+    perRepos[pImage.REPOSITORY] += s;
+
+    let u = pImage.containers.length>=1?"used":"unused";
+    perUsage[u] += s;
+  });
+
+  console.log(perUsers);
+  console.log(perUsage);
+  console.log(perRepos);
+
+  /**
+   *
+   *        <script type="application/json">
+   *            {
+   * 			    "id":"demo",
+   * 				"debug":true,
+   * 				"width":400,
+   * 				"height":300,
+   * 				"type":"pie",
+   * 				"fontFace":"Arial",
+   * 				"data":
+   * 				[
+   * 					{"color":"rgb(200, 200, 200)", "value":30, "label":"E-mails ouverts"},
+   * 					{"color":"rgb(85, 85, 85)", "value":60, "label":"E-mails non ouverts"},
+   * 					{"color":"rgb(85, 0, 85)", "value":6, "label":"E-mails non ouverts"},
+   * 					{"color":"rgb(85, 85, 0)", "value":4, "label":"E-mails non ouverts"}
+   * 				]
+   * 			}
+   *        </script>
+   */
 }
 
 function renderList(pName){

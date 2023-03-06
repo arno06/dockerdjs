@@ -31,9 +31,9 @@ let listScreen = {
       let link = '';
       if(status === 'online'){
         if(inspections[pContainer['CONTAINER ID']]&&inspections[pContainer['CONTAINER ID']].url){
-          link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon eye"></i></a>';
+          link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon link"></i></a>';
         }else{
-          link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon eye"></i></a>';
+          link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon link"></i></a>';
         }
       }
       return `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
@@ -171,6 +171,7 @@ function updateContent(){
 }
 
 function refreshStats(){
+  let colors = ["rgb(244, 67, 54)", "rgb(232, 30, 99)", "rgb(156, 39, 176)", "rgb(103, 58, 183)", "rgb(63, 81, 181)", "rgb(33, 150, 243)", "rgb(3, 169, 244)", "rgb(0, 188, 212)", "rgb(0, 150, 136)", "rgb(76, 175, 80)", "rgb(139, 195, 74)", "rgb(205, 220, 57)", "rgb(255, 235, 59)", "rgb(255, 193, 7)", "rgb(255, 152, 0)", "rgb(255, 87, 34)"];
   let perUsers = {};
   let perRepos = {};
   let perUsage = {'used':0, 'unused':0};
@@ -181,45 +182,76 @@ function refreshStats(){
     }else{
       s = Number(s.replace("MB", ""));
     }
-    console.log(pImage.SIZE, s);
     if(!perUsers.hasOwnProperty(pImage.USER)){
       perUsers[pImage.USER] = 0;
     }
     perUsers[pImage.USER] += s;
 
-    if(!perRepos.hasOwnProperty(pImage.REPOSITORY)){
-      perRepos[pImage.REPOSITORY] = 0;
+    let repo = pImage.REPOSITORY.split("/").shift();
+    if(!perRepos.hasOwnProperty(repo)){
+      perRepos[repo] = 0;
     }
-    perRepos[pImage.REPOSITORY] += s;
+    perRepos[repo] += s;
 
     let u = pImage.containers.length>=1?"used":"unused";
     perUsage[u] += s;
   });
 
-  console.log(perUsers);
   console.log(perUsage);
   console.log(perRepos);
 
-  /**
-   *
-   *        <script type="application/json">
-   *            {
-   * 			    "id":"demo",
-   * 				"debug":true,
-   * 				"width":400,
-   * 				"height":300,
-   * 				"type":"pie",
-   * 				"fontFace":"Arial",
-   * 				"data":
-   * 				[
-   * 					{"color":"rgb(200, 200, 200)", "value":30, "label":"E-mails ouverts"},
-   * 					{"color":"rgb(85, 85, 85)", "value":60, "label":"E-mails non ouverts"},
-   * 					{"color":"rgb(85, 0, 85)", "value":6, "label":"E-mails non ouverts"},
-   * 					{"color":"rgb(85, 85, 0)", "value":4, "label":"E-mails non ouverts"}
-   * 				]
-   * 			}
-   *        </script>
-   */
+  let rand = (pMax)=>{
+    return Math.round(Math.random() * pMax);
+  };
+
+  let dataUsage = [{
+    value:perUsage.unused,
+    color:"rgb(232, 30, 99)",
+    "label":"Images sans conteneur ("+Math.round(perUsage.unused / 1024)+"Go)"
+  }, {
+    value:perUsage.used,
+    color:"rgb(76, 175, 80)",
+    "label":"Images avec conteneur ("+Math.round(perUsage.used / 1024)+"Go)"
+  }];
+
+  let dataUsers = [];
+  for(let i in perUsers){
+    if(!perUsers.hasOwnProperty(i)){
+      continue;
+    }
+    dataUsers.push({
+      "color":"rbg(255, 0, 0)",
+      "value":perUsers[i],
+      "label":i + " ("+Math.round(perUsers[i] / 1024)+"Go)"
+    });
+  }
+
+  dataUsers.sort((pA, pB)=>pA.value-pB.value).forEach((pEntry, pIndex)=>pEntry.color=colors[pIndex]);
+
+
+  let perUsr = {
+    'id':'perUsers',
+    'debug':false,
+    'width':200,
+    'height':200,
+    "type":"pie",
+    "fontFace":"Arial",
+    "data":dataUsers
+  };
+
+  let perUsge = {
+    'id':'perUsage',
+    'debug':false,
+    'width':200,
+    'height':200,
+    "type":"pie",
+    "fontFace":"Arial",
+    "data":dataUsage
+  };
+
+  document.querySelector('#stats .perUsers').innerHTML = '<div class="StageChart"><h3>Par utilisateur</h3><script type="application/json">'+JSON.stringify(perUsr)+'</script></div>';
+  document.querySelector('#stats .perUsage').innerHTML = '<div class="StageChart"><h3>Images utilisées</h3><script type="application/json">'+JSON.stringify(perUsge)+'</script></div>';
+  StageChart.init();
 }
 
 function renderList(pName){
@@ -245,8 +277,7 @@ function renderList(pName){
     });
   });
 
-  let headers = document.querySelector('#'+pName+'.list .content .headers');
-  headers.style.paddingRight = (container_element.offsetWidth - container_element.clientWidth)+"px";
+  adjustHeader(document.querySelector('#'+pName+'.list'));
 }
 
 function toggleTabHandler(e){
@@ -257,7 +288,17 @@ function toggleTabHandler(e){
   container.classList.remove("current");
   let t = e.currentTarget;
   t.classList.add("current");
-  document.querySelector('#'+t.getAttribute("data-tab")).classList.add("current");
+  const new_current = document.querySelector('#'+t.getAttribute("data-tab"));
+  new_current.classList.add("current");
+  if(new_current.classList.contains('list')){
+    adjustHeader(new_current);
+  }
+}
+
+function adjustHeader(pParent){
+  let container_element = pParent.querySelector('.content .body');
+  let headers = pParent.querySelector('.content .headers');
+  headers.style.paddingRight = (container_element.offsetWidth - container_element.clientWidth)+"px";
 }
 
 function getSelectedRowsIds(pParentSelector){
@@ -428,7 +469,7 @@ window.renderBoxContainers = function(pId){
   let list = '';
   img.containers.forEach((pCtn)=>{
     let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
-    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon eye'></i></a>";
+    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon link'></i></a>";
     let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
     list += `
     <div class="row">
@@ -659,5 +700,5 @@ window.addEventListener("DOMContentLoaded", () => {
     initWorkingDirsScreen();
     initParametersScreen();
   });
-  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

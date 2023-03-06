@@ -15,10 +15,10 @@
     <div class="side open">
       <div><a id="home_button" class="button"><i class="icon logo"></i><span>Dockerd</span></a>
       <menu>
-        <li data-tab="images" class="button"><i class="icon image"></i><span>Images</span></li>
+        <li data-tab="images" class="button current"><i class="icon image"></i><span>Images</span></li>
         <li data-tab="containers" class="button"><i class="icon list"></i><span>Containers</span></li>
         <li data-tab="workingdir" class="button"><i class="icon folder"></i><span>Dossier de travail</span></li>
-        <li data-tab="stats" class="button current"><i class="icon folder"></i><span>Statistiques</span></li>
+        <li data-tab="stats" class="button"><i class="icon chart"></i><span>Statistiques</span></li>
       </menu></div>
       <a data-tab="parameters" class="button"><i class="icon cog"></i><span>Paramètres</span></a></div>
     <div class="main">
@@ -26,7 +26,7 @@
       <div id="box_content">
         <h1>Contenu box</h1>
       </div>
-      <div id="images" class="list">
+      <div id="images" class="list current">
         <div class="form">
           <div class="actions"><a class="button" id="images_rm"><i class="icon remove"></i></a></div>
           <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, user...">
@@ -113,8 +113,10 @@
           </div>
         </div>
       </div>
-      <div id="stats" class="current">
-        <h1>Stats</h1>
+      <div id="stats">
+        <h1>Statistiques</h1>
+        <div class="perUsers"></div>
+        <div class="perUsage"></div>
       </div>
       <div id="parameters">
         <div class="block">

@@ -132,6 +132,7 @@ function updateContent(){
     }
     promises.push(dockerCli(listScreen[k].dockerArgs));
   }
+  Loader.show();
   return Promise.all(promises).then((pVals)=>{
     listScreen.containers.data = parseCLIResult(pVals[0][0]);
     let parsedImages = parseCLIResult(pVals[1][0]);
@@ -166,6 +167,7 @@ function updateContent(){
       renderList(k);
     }
     refreshStats();
+    Loader.hide();
   });
 
 }
@@ -196,9 +198,6 @@ function refreshStats(){
     let u = pImage.containers.length>=1?"used":"unused";
     perUsage[u] += s;
   });
-
-  console.log(perUsage);
-  console.log(perRepos);
 
   let rand = (pMax)=>{
     return Math.round(Math.random() * pMax);
@@ -526,6 +525,7 @@ window.cancelRecycle = function(){
   running_recycle = false;
 };
 window.recycleWorkingDir = function (){
+  Loader.show();
   let dir = document.querySelector('#wd_dir').value;
   let repo = document.querySelector('#wd_repository').value;
   let tag = document.querySelector('#wd_tag').value;
@@ -700,12 +700,28 @@ async function initConfig(){
   });
 }
 
+let Loader = {
+  show:()=>{
+    if(document.querySelector('#container>span.loader')){
+      return;
+    }
+    let s = document.createElement('span');
+    s.classList.add('loader');
+    document.querySelector('#container').appendChild(s);
+  },
+  hide:()=>{
+    if(!document.querySelector('#container>span.loader')){
+      return;
+    }
+    document.querySelector('#container>span.loader').remove();
+  }
+};
+
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('#container>.side *[data-tab]').forEach((pElement)=>{
     pElement.addEventListener('click', toggleTabHandler);
   });
   initConfig().then(()=>{
-    console.log("inited");
     updateContent();
     initImagesScreen();
     initContainersScreen();

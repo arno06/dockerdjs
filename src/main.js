@@ -41,7 +41,7 @@ let listScreen = {
       <span class="checkbox"><input type="checkbox"></span>
       <span class="name"><span class="repo">${pContainer.NAMES}</span><span class="tag">${pContainer.IMAGE}</span></span>
       <span class="link">${link}</span>
-      <span class="status">${pContainer.STATUS}</span>
+      <span class="recycle"><a class="button" onclick="recycleContainer('${pContainer['CONTAINER ID']}')"><i class="icon folder"></i></a></span>
       <span class="created">${pContainer.CREATED}</span>
       </div>`;
     }
@@ -376,6 +376,18 @@ window.killContainer = function (pId){
 window.restartContainer = function (pId){
   return dockerCli(["restart"].concat(pId.split(" "))).then(updateContent);
 }
+window.recycleContainer = function (pContainerId){
+  let container = listScreen.containers.data.filter((pContainer)=>pContainer['CONTAINER ID'] === pContainerId);
+  if(!container.length){
+    return;
+  }
+  container = container[0];
+  let [image_repo, image_tag] = container.IMAGE.split(':');
+  document.querySelector('#wd_container').value = container.NAMES;
+  document.querySelector('#wd_repository').value = image_repo;
+  document.querySelector('#wd_tag').value = image_tag;
+
+}
 window.inspectContainer = function(pId){
   if(inspections[pId]){
     renderList('containers');
@@ -700,5 +712,5 @@ window.addEventListener("DOMContentLoaded", () => {
     initWorkingDirsScreen();
     initParametersScreen();
   });
-  document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

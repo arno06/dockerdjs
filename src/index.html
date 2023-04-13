@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dockerd</title>
-    <script type="module" src="/main.js" defer></script>
-    <script src="/scripts/libs/M4Tween.js" defer></script>
-    <script src="/scripts/libs/Stage.js" defer></script>
+    <title>DockerdJS</title>
+    <script type="module" src="./main.js" defer></script>
+    <script src="./scripts/libs/M4Tween.js" defer></script>
+    <script src="./scripts/libs/Stage.js" defer></script>
   </head>
 
   <body>
@@ -29,13 +29,13 @@
       <div id="images" class="list current">
         <div class="form">
           <div class="actions"><a class="button" id="images_rm"><i class="icon remove"></i></a></div>
-          <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, user...">
+          <input aria-label="Filtrer" type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, user...">
           <div class="actions"><a class="button" id="images_reload"><i class="icon refresh"></i></a></div>
         </div>
         <div class="content">
           <div class="headers">
             <span class="checkbox">
-                <input type="checkbox" id="all">
+                <input aria-label="Tous" type="checkbox" id="all">
             </span>
             <span class="name">Name</span>
             <span class="containers">Containers</span>
@@ -51,14 +51,14 @@
       <div id="containers" class="list">
         <div class="form">
           <div class="actions"><a class="button" id="containers_kill"><i class="icon stop"></i></a><a class="button" id="containers_restart"><i class="icon play"></i></a><a class="button" id="containers_rm"><i class="icon remove"></i></a></div>
-          <input type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, name...">
+          <input aria-label="Filtrer" type="search" autocomplete="off" spellcheck="false" placeholder="Repository, tag, name...">
           <div class="actions"><a class="button" id="containers_reload"><i class="icon refresh"></i></a></div>
         </div>
         <div class="content">
           <div class="headers">
             <span class="net_indicator"></span>
             <span class="checkbox">
-                <input type="checkbox">
+                <input aria-label="Tous" type="checkbox">
             </span>
             <span class="name">Name</span>
             <span class="actions"></span>
@@ -80,25 +80,25 @@
         </div>
         <div class="form">
           <div class="input">
-            <label>Dossier de travail :</label>
+            <label for="wd_dir">Dossier de travail :</label>
             <input type="text" disabled id="wd_dir"/>
             <a class="button" id="folder_choice"><i class="icon folder"></i></a>
           </div>
           <div class="group">
             <h4>Image</h4>
             <div class="input">
-              <label>Repository :</label>
+              <label for="wd_repository">Repository :</label>
               <input type="text" autocomplete="off" spellcheck="false" id="wd_repository"/>
             </div>
             <div class="input">
-              <label>Tag :</label>
+              <label for="wd_tag">Tag :</label>
               <input type="text" autocomplete="off" spellcheck="false" id="wd_tag"/>
             </div>
           </div>
           <div class="group">
             <h4>Conteneur</h4>
             <div class="input">
-              <label>Nom :</label>
+              <label for="wd_container">Nom :</label>
               <input type="text" autocomplete="off" spellcheck="false" id="wd_container"/>
             </div>
           </div>

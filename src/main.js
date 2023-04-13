@@ -199,10 +199,6 @@ function refreshStats(){
     perUsage[u] += s;
   });
 
-  let rand = (pMax)=>{
-    return Math.round(Math.random() * pMax);
-  };
-
   let dataUsage = [{
     value:perUsage.unused,
     color:"rgb(232, 30, 99)",
@@ -684,7 +680,7 @@ function initParametersScreen(){
 }
 
 async function initConfig(){
-  return new Promise(async (pResolve, pError)=>{
+  return new Promise(async (pResolve)=>{
     cli('whoami').then(([pRes])=>{user = pRes.split('\\').pop().replace(/\s/, "");});
     let configFilesExists = await exists(CONFIG_FILE, {dir: BaseDirectory.Public});
     if(configFilesExists){

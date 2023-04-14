@@ -253,7 +253,7 @@ function renderList(pName){
   let container_element = document.querySelector('#'+pName+'.list .content .body');
   let search_element = document.querySelector('#'+pName+' .form input[type="search"]');
   if(!listScreen[pName].data.length){
-    container_element.innerHTML = '<div class="empty">'+listScreen[pName].emptyMessage+'<span>(Vérifier que le serveur Docker est accessible)</span></div>';
+    container_element.innerHTML = '<div class="empty">'+listScreen[pName].emptyMessage+'<span>(ou serveur docker inaccessible)</span></div>';
     return;
   }
   let filtered_list = listScreen[pName].data;
@@ -530,10 +530,13 @@ window.recycleWorkingDir = function (){
   let img = repo+':'+tag;
 
   let run_args = ['run', '-d', '--name', container];
+  if(document.querySelector('#wd_container_restart').checked){
+    run_args.push('--restart', 'always');
+  }
   document.querySelectorAll('#workingdir div[data-name="env_vars"] .inputs p').forEach((pElement)=>{
     run_args.push('-e', pElement.querySelector('input[name="label"]').value+'='+pElement.querySelector('input[name="value"]').value);
   });
-  run_args.push(img, '--restart=always');
+  run_args.push(img);
 
   working_dir_progress.resetSteps();
   let recycleButton = document.querySelector('#workingdir .status .button.recycle');
@@ -569,6 +572,7 @@ window.recycleWorkingDir = function (){
         dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then(([build, pError])=>{
           working_dir_progress.setStep('build', pError?STATE_ERROR:STATE_VALID);
           working_dir_progress.setStep('run', STATE_IN_PROGRESS);
+          running_recycle = !pError;
           if(!running_recycle){
             endRecycle();
             return;

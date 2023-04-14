@@ -28,14 +28,14 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 .icon.list{mask-image: url("assets/images/list-bullet-svgrepo-com.svg");-webkit-mask-image: url("assets/images/list-bullet-svgrepo-com.svg");}
 .icon.chart{mask-image: url("assets/images/chartbar-2-svgrepo-com.svg");-webkit-mask-image: url("assets/images/chartbar-2-svgrepo-com.svg");}
 .icon.cog{mask-image: url("assets/images/gear-svgrepo-com.svg");-webkit-mask-image: url("assets/images/gear-svgrepo-com.svg");}
-.icon.refresh{mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");-webkit-mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");}
-.icon.remove{mask-image: url("assets/images/nosign-svgrepo-com.svg");-webkit-mask-image: url("assets/images/nosign-svgrepo-com.svg");}
+.icon.recycle{mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");-webkit-mask-image: url("assets/images/arrow-ccw-svgrepo-com.svg");}
+.icon.remove{mask-image: url("assets/images/trash-svgrepo-com.svg");-webkit-mask-image: url("assets/images/trash-svgrepo-com.svg");}
 .icon.play{mask-image: url("assets/images/media-play-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-play-svgrepo-com.svg");}
 .icon.stop{mask-image: url("assets/images/media-stop-svgrepo-com.svg");-webkit-mask-image: url("assets/images/media-stop-svgrepo-com.svg");}
 .icon.info{mask-image: url("assets/images/info-circle-svgrepo-com.svg");-webkit-mask-image: url("assets/images/info-circle-svgrepo-com.svg");}
 .icon.eye{mask-image: url("assets/images/eye-svgrepo-com.svg");-webkit-mask-image: url("assets/images/eye-svgrepo-com.svg");}
 .icon.link{mask-image: url("assets/images/link-alt-svgrepo-com.svg");-webkit-mask-image: url("assets/images/link-alt-svgrepo-com.svg");}
-.icon.recycle{mask-image: url("assets/images/arrow-2-rectangle-path-svgrepo-com.svg");-webkit-mask-image: url("assets/images/arrow-2-rectangle-path-svgrepo-com.svg");}
+.icon.refresh{mask-image: url("assets/images/arrow-2-rectangle-path-svgrepo-com.svg");-webkit-mask-image: url("assets/images/arrow-2-rectangle-path-svgrepo-com.svg");}
 .icon.logo{background:url("assets/images/icon.png") no-repeat;background-size:contain;}
 
 #container{display:flex;width:100%;height:100%;}
@@ -83,7 +83,7 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 #container .main .list .content .body .row{display:flex;height:50px;align-items: center;border-bottom:solid 1px #eee;}
 #container .main .list .content .body .row.odd{background:#fff;}
 #container .main .list .content .body .empty{flex-direction:column;display:flex;height:100%;align-items: center;justify-content: center;background:url("assets/images/alert-triangle-svgrepo-com.svg") no-repeat center center;background-size:contain;}
-#container .main .list .content .body .empty span{color:#999;}
+#container .main .list .content .body .empty span{color:#999;display:inline-block;margin-top:.5em;}
 
 #container .main .list .content span{flex: 0 0 auto;display:block;}
 #container .main .list .content span.checkbox{width:35px;text-align: center;}

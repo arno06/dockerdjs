@@ -12,6 +12,7 @@ let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
 let docker_envs = [{'label':'VIRTUAL_HOST', 'value':'{value}.ama-doc.vidal.fr'}, {'label':'LETSENCRYPT_HOST', 'value':'{value}.ama-doc.vidal.fr'}];
 let working_dirs = [];
 let running_recycle = false;
+let gitNamingContainer = true;
 let working_dir_index = 0;
 let working_dir_progress;
 let imgSearchTo;
@@ -33,7 +34,7 @@ let listScreen = {
         if(inspections[pContainer['CONTAINER ID']]&&inspections[pContainer['CONTAINER ID']].url){
           link = '<a class="button" target="_blank" href="'+inspections[pContainer['CONTAINER ID']].url+'"><i class="icon link"></i></a>';
         }else{
-          link = '<a class="button" onclick="inspectContainer(\''+pContainer['CONTAINER ID']+'\');"><i class="icon link"></i></a>';
+          link = '<a class="button" onclick="openDockerUrl(\''+pContainer['CONTAINER ID']+'\');"><i class="icon link"></i></a>';
         }
       }
       return `<div class="row ${oddity}" data-id="${pContainer['CONTAINER ID']}">
@@ -377,17 +378,38 @@ window.recycleContainer = function (pContainerId){
     return;
   }
   container = container[0];
-  let [image_repo, image_tag] = container.IMAGE.split(':');
-  document.querySelector('#wd_container').value = container.NAMES;
-  document.querySelector('#wd_repository').value = image_repo;
-  document.querySelector('#wd_tag').value = image_tag;
+  inspectContainer(container['CONTAINER ID']).then((pInspection)=>{
+    let [image_repo, image_tag] = container.IMAGE.split(':');
+    document.querySelector('#wd_container').value = working_dirs[working_dir_index].wd_container = container.NAMES;
+    document.querySelector('#wd_repository').value = working_dirs[working_dir_index].wd_repository = image_repo;
+    document.querySelector('#wd_tag').value = working_dirs[working_dir_index].wd_tag = image_tag;
+    if(document.querySelector('input[value="VIRTUAL_HOST"]')&&pInspection.env.VIRTUAL_HOST){
+      document.querySelector('input[value="VIRTUAL_HOST"]+input[name="value"]').value = pInspection.env.VIRTUAL_HOST.replace("http://", "");
+    }
+    if(document.querySelector('input[value="LETSENCRYPT_HOST"]')&&pInspection.env.LETSENCRYPT_HOST){
+      document.querySelector('input[value="LETSENCRYPT_HOST"]+input[name="value"]').value = pInspection.env.LETSENCRYPT_HOST.replace("https://", "");
+    }
+    gitNamingContainer = false;
+  }).then(saveConfig).then(()=>{
+    toggleTabHandler({currentTarget:document.querySelector('menu li[data-tab="workingdir"]')});
+  });
 
 }
+
+window.openDockerUrl = function (pId){
+  if(inspections[pId]){
+    open(inspections[pId].url);
+    return;
+  }
+  inspectContainer(pId).then((pInspection)=>{
+    open(pInspection.url);
+  });
+}
+
 window.inspectContainer = function(pId){
   if(inspections[pId]){
     renderList('containers');
-    open(inspections[pId].url);
-    return;
+    return new Promise((pResolve)=>pResolve(inspections[pId]));
   }
   return dockerCli(["inspect", pId]).then((pData)=>{
     let data = JSON.parse(pData[0]);
@@ -408,7 +430,7 @@ window.inspectContainer = function(pId){
       "url":env.LETSENCRYPT_HOST||env.VIRTUAL_HOST
     };
     renderList('containers');
-    open(inspections[pId].url);
+    return inspections[pId];
   });
 }
 window.changeWorkingDir = function(pIndex){
@@ -417,6 +439,10 @@ window.changeWorkingDir = function(pIndex){
   document.querySelector('#wd_dir').value = dir.dir??'';
   if(document.querySelector('#workingdir>ul>li.current')){
     document.querySelector('#workingdir>ul>li.current').classList.remove('current');
+  }
+  if(!gitNamingContainer){
+    gitNamingContainer = true;
+    return;
   }
   cli('git', ['-C', dir.dir, 'branch', '--show-current']).then(([pRes])=>{
     let branch = pRes.split("/");
@@ -476,7 +502,7 @@ window.renderBoxContainers = function(pId){
   let list = '';
   img.containers.forEach((pCtn)=>{
     let status = pCtn.STATUS.indexOf('Exited')===0?"offline":"online";
-    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='inspectContainer(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon link'></i></a>";
+    let see = pCtn.STATUS.indexOf('Exited')===0?"":"<a class='button' onclick='openDockerUrl(\""+pCtn["CONTAINER ID"]+"\")'><i class='icon link'></i></a>";
     let killAction = pCtn.STATUS.indexOf('Exited')===0?"":`<a class="button" onclick="killContainer('${pCtn["CONTAINER ID"]}').then(()=>{displayBox(renderBoxContainers('${pId}'));})"><i class="icon stop"></i></a>`;
     list += `
     <div class="row">

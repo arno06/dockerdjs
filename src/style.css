@@ -97,6 +97,7 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 #container .main .list .content span.status{width:150px;text-align: center;}
 #container .main .list .content span.size{width:75px;text-align: center;}
 #container .main .list .content span.net_indicator{width:6px;height:50px;}
+#container .main .list .content span.recycle{margin-left:0.5em;}
 #container .main .list .content .body span.user,
 #container .main .list .content .body span.created,
 #container .main .list .content .body span.size{font-size:0.8em;}

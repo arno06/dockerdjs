@@ -80,7 +80,7 @@ function cli(pCommand, pParams){
     let data = [];
     t.stdout.on('data', (pLine)=>data.push(pLine));
     let res = await t.execute();
-    pResolve([data.join("\n"), res.code!==0]);
+    pResolve([data.join("\n"), res.code!==0||(res.stderr.length>0&&res.stdout.length===0)]);
   });
 }
 
@@ -754,5 +754,5 @@ window.addEventListener("DOMContentLoaded", () => {
     initWorkingDirsScreen();
     initParametersScreen();
   });
-  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

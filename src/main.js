@@ -8,6 +8,7 @@ const { BaseDirectory, exists, readTextFile, writeTextFile } = window.__TAURI__.
 const DOCKER_COMMAND = 'dockerdjs';
 const CONFIG_FILE = "dockerdjs.conf";
 let user = 'unknown';
+let lastCLIError = null;
 let docker_arguments = ['--tlsverify', '-H=docker-digital.vidal.net:2376'];
 let docker_envs = [{'label':'VIRTUAL_HOST', 'value':'{value}.ama-doc.vidal.fr'}, {'label':'LETSENCRYPT_HOST', 'value':'{value}.ama-doc.vidal.fr'}];
 let working_dirs = [];
@@ -74,13 +75,18 @@ function dockerCli(pParams){
 }
 
 function cli(pCommand, pParams){
+  lastCLIError = null;
   console.log("Running : "+pCommand+" "+(pParams?pParams.join(" "):''));
   return new Promise(async (pResolve)=>{
     let t = new Command(pCommand, pParams);
     let data = [];
     t.stdout.on('data', (pLine)=>data.push(pLine));
     let res = await t.execute();
-    pResolve([data.join("\n"), res.code!==0||(res.stderr.length>0&&res.stdout.length===0)]);
+    let error = res.code!==0||(res.stderr.length>0&&res.stdout.length===0);
+    if(error){
+      lastCLIError = res.stdout.length===0?res.stderr:res.stdout;
+    }
+    pResolve([data.join("\n"), error]);
   });
 }
 
@@ -140,7 +146,10 @@ function updateContent(){
     let named = [];
     listScreen.images.data = [];
     parsedImages.forEach((pImage, pIndex)=>{
-      let concat_named = pImage['REPOSITORY']+':'+pImage['TAG'];
+      let concat_named = pImage['REPOSITORY'];
+      if(pImage['TAG']!=="latest"){
+        concat_named += ':'+pImage['TAG'];
+      }
       pImage.containers = listScreen.containers.data.filter((pCtn)=>pCtn['IMAGE'] === pImage['IMAGE ID']||pCtn['IMAGE'] === concat_named);
       pImage.index = pIndex;
       if(pImage["REPOSITORY"].indexOf('user/')>-1){
@@ -487,6 +496,7 @@ window.removeWorkingDir = function(pEvent){
   changeWorkingDir(0);
 };
 window.displayBox = function(pHtml){
+  console.log(pHtml);
   if(pHtml===false){
     document.querySelector('#box_overlay').classList.remove('displayed');
     return;
@@ -547,6 +557,7 @@ window.cancelRecycle = function(){
   running_recycle = false;
 };
 window.recycleWorkingDir = function (){
+  console.log("recycle");
   Loader.show();
   let dir = document.querySelector('#wd_dir').value;
   let repo = document.querySelector('#wd_repository').value;
@@ -600,6 +611,8 @@ window.recycleWorkingDir = function (){
           working_dir_progress.setStep('run', STATE_IN_PROGRESS);
           running_recycle = !pError;
           if(!running_recycle){
+            console.log("nop");
+            displayError();
             endRecycle();
             return;
           }
@@ -613,6 +626,11 @@ window.recycleWorkingDir = function (){
       });
     })
   })
+}
+
+function displayError(){
+  console.log("displayError");
+  displayBox("<code>"+lastCLIError+"</code>");
 }
 
 function toggleMenuHandler(){
@@ -754,5 +772,5 @@ window.addEventListener("DOMContentLoaded", () => {
     initWorkingDirsScreen();
     initParametersScreen();
   });
-  document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

@@ -118,7 +118,7 @@ html, body{padding:0;margin:0;width:100%;height:100%;overflow: hidden;}
 #container #parameters .block form .input .list .actions{justify-content: end;margin-top:0.5em;}
 
 #workingdir{}
-#workingdir ul{list-style: none;padding:0;margin:0;display:flex;align-items: center;}
+#workingdir ul{list-style: none;padding:0;margin:0;display:flex;align-items: end;}
 #workingdir ul li{flex: 0 0 auto;margin:0;padding:0.8em;border-top:solid 3px transparent;color:#666;cursor:pointer;transition:all .2s;display:flex;align-items: center;justify-content: space-between;width:100px;}
 #workingdir ul li .button{border:none;padding:2px;width:15px;height:15px;box-shadow: none;border-radius:100%;background:none;display:flex;align-items: center;justify-content: center;font-size:0.8em;}
 #workingdir ul li .button:hover{background:#ddd;}

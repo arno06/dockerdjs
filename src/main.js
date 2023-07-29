@@ -85,6 +85,7 @@ function cli(pCommand, pParams){
     let error = res.code!==0||(res.stderr.length>0&&res.stdout.length===0);
     if(error){
       lastCLIError = res.stdout.length===0?res.stderr:res.stdout;
+      lastCLIError = lastCLIError.replace(/\n/g, "<br/>");
     }
     pResolve([data.join("\n"), error]);
   });
@@ -608,7 +609,6 @@ window.recycleWorkingDir = function (){
         console.log('build');
         dockerCli(['build', '-t', img, '-t', 'user/'+user+':'+(new Date()).getTime(), dir]).then(([build, pError])=>{
           working_dir_progress.setStep('build', pError?STATE_ERROR:STATE_VALID);
-          working_dir_progress.setStep('run', STATE_IN_PROGRESS);
           running_recycle = !pError;
           if(!running_recycle){
             console.log("nop");
@@ -616,6 +616,7 @@ window.recycleWorkingDir = function (){
             endRecycle();
             return;
           }
+          working_dir_progress.setStep('run', STATE_IN_PROGRESS);
           console.log('run');
           dockerCli(run_args).then(([run, pError])=>{
             working_dir_progress.setStep('run', pError?STATE_ERROR:STATE_VALID);
@@ -628,9 +629,14 @@ window.recycleWorkingDir = function (){
   })
 }
 
-function displayError(){
-  console.log("displayError");
-  displayBox("<code>"+lastCLIError+"</code>");
+async function displayError(){
+  const error = lastCLIError;
+  let containerIds = /Running in ([0-9a-z]+)/.exec(error);
+  if(containerIds.length){
+    //cleaning up the mess
+    await rmContainer(containerIds[1]);
+  }
+  displayBox("<div class='error'><h1>Erreur de build :</h1>"+error+"</div>");
 }
 
 function toggleMenuHandler(){

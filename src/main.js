@@ -632,7 +632,7 @@ window.recycleWorkingDir = function (){
 async function displayError(){
   const error = lastCLIError;
   let containerIds = /Running in ([0-9a-z]+)/.exec(error);
-  if(containerIds.length){
+  if(containerIds&&containerIds.length){
     //cleaning up the mess
     await rmContainer(containerIds[1]);
   }

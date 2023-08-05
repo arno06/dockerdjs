@@ -351,7 +351,9 @@ function addLineInput(pParent, pVals){
       break;
   }
   input += '<a class="button" onclick="removeLineInputHandler(event);">-</a>';
-  pParent.querySelector('.inputs').innerHTML += '<p>'+input+'</p>';
+  let p = document.createElement('p');
+  p.innerHTML = input;
+  pParent.querySelector('.inputs').appendChild(p);
 }
 
 function endRecycle(){
@@ -565,7 +567,10 @@ window.recycleWorkingDir = function (){
   let tag = document.querySelector('#wd_tag').value;
   let container = document.querySelector('#wd_container').value;
 
-  let img = repo+':'+tag;
+  let img = repo;
+  if(tag.length){
+    img += ':'+tag;
+  }
 
   let run_args = ['run', '-d', '--name', container];
   if(document.querySelector('#wd_container_restart').checked){
@@ -778,5 +783,5 @@ window.addEventListener("DOMContentLoaded", () => {
     initWorkingDirsScreen();
     initParametersScreen();
   });
-  //document.addEventListener('contextmenu', (e)=>e.preventDefault());
+  document.addEventListener('contextmenu', (e)=>e.preventDefault());
 });

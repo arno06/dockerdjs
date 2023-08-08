@@ -499,7 +499,6 @@ window.removeWorkingDir = function(pEvent){
   changeWorkingDir(0);
 };
 window.displayBox = function(pHtml){
-  console.log(pHtml);
   if(pHtml===false){
     document.querySelector('#box_overlay').classList.remove('displayed');
     return;
